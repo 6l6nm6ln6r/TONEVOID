@@ -67,9 +67,24 @@ const getFreq = (midi: number) => {
   return 440 * Math.pow(2, (midi - 69) / 12);
 };
 
-const ControlKnob = ({ label, value, min, max, step = 1, onChange, unit = "" }: { 
-  label: string, value: number, min: number, max: number, step?: number, onChange: (val: number) => void, unit?: string 
+const COLOR_MAPS = {
+  pink: { stroke: 'stroke-pink-500', bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-pink-500', hoverText: 'group-hover:text-pink-400', shadow: 'shadow-[0_0_10px_rgba(236,72,153,0.4)]' },
+  emerald: { stroke: 'stroke-emerald-500', bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-emerald-500', hoverText: 'group-hover:text-emerald-400', shadow: 'shadow-[0_0_10px_rgba(16,185,129,0.4)]' },
+  blue: { stroke: 'stroke-blue-500', bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-blue-500', hoverText: 'group-hover:text-blue-400', shadow: 'shadow-[0_0_10px_rgba(59,130,246,0.4)]' },
+  purple: { stroke: 'stroke-purple-500', bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-purple-500', hoverText: 'group-hover:text-purple-400', shadow: 'shadow-[0_0_10px_rgba(168,85,247,0.4)]' },
+  yellow: { stroke: 'stroke-yellow-500', bg: 'bg-yellow-500', border: 'border-yellow-400', text: 'text-yellow-500', hoverText: 'group-hover:text-yellow-400', shadow: 'shadow-[0_0_10px_rgba(234,179,8,0.4)]' },
+  green: { stroke: 'stroke-green-500', bg: 'bg-green-500', border: 'border-green-400', text: 'text-green-500', hoverText: 'group-hover:text-green-400', shadow: 'shadow-[0_0_10px_rgba(34,197,94,0.4)]' },
+  orange: { stroke: 'stroke-orange-500', bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-orange-500', hoverText: 'group-hover:text-orange-400', shadow: 'shadow-[0_0_10px_rgba(249,115,22,0.4)]' },
+  indigo: { stroke: 'stroke-indigo-500', bg: 'bg-indigo-500', border: 'border-indigo-400', text: 'text-indigo-500', hoverText: 'group-hover:text-indigo-400', shadow: 'shadow-[0_0_10px_rgba(99,102,241,0.4)]' },
+};
+
+type ColorKey = keyof typeof COLOR_MAPS;
+
+const ControlKnob = ({ label, value, min, max, step = 1, onChange, unit = "", color = "orange" }: { 
+  label: string, value: number, min: number, max: number, step?: number, onChange: (val: number) => void, unit?: string, color?: ColorKey
 }) => {
+  const theme = COLOR_MAPS[color];
+  
   return (
     <div className="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 bg-zinc-900/40 rounded-xl border border-zinc-800/40 w-full max-w-[140px]">
       <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.1em] text-zinc-500 font-bold text-center">{label}</span>
@@ -89,7 +104,7 @@ const ControlKnob = ({ label, value, min, max, step = 1, onChange, unit = "" }: 
             cx="28"
             cy="28"
             r="24"
-            className="stroke-orange-500 fill-none transition-all duration-200"
+            className={`${theme.stroke} fill-none transition-all duration-200`}
             strokeWidth="3"
             strokeDasharray={150.8}
             strokeDashoffset={150.8 - (150.8 * (value - min)) / (max - min)}
@@ -100,7 +115,7 @@ const ControlKnob = ({ label, value, min, max, step = 1, onChange, unit = "" }: 
             className="w-6 h-6 sm:w-8 sm:h-8 bg-zinc-800 rounded-full shadow-xl border border-zinc-700 flex items-center justify-center transition-transform duration-200"
             style={{ transform: `rotate(${(value - min) / (max - min) * 270 - 135}deg)` }}
           >
-            <div className="w-0.5 h-2 sm:w-1 sm:h-3 bg-orange-500 rounded-full -translate-y-1.5 sm:-translate-y-2" />
+            <div className={`w-0.5 h-2 sm:w-1 sm:h-3 ${theme.bg} rounded-full -translate-y-1.5 sm:-translate-y-2`} />
           </div>
         </div>
       </div>
@@ -111,60 +126,68 @@ const ControlKnob = ({ label, value, min, max, step = 1, onChange, unit = "" }: 
   );
 };
 
-const WaveSelector = ({ label, current, enabled, options, onChange, onToggle }: { 
-  label: string, current: string, enabled: boolean, options: OscillatorType[], onChange: (val: OscillatorType) => void, onToggle: () => void
-}) => (
-  <div className={`flex flex-col gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl border transition-all ${enabled ? 'bg-zinc-900/40 border-zinc-800/40' : 'bg-zinc-950/20 border-zinc-900/50 opacity-60'}`}>
-    <div className="flex justify-between items-center">
-      <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.1em] text-zinc-500 font-bold">{label}</span>
-      <div className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${enabled ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]' : 'bg-zinc-800'}`} />
+const WaveSelector = ({ label, current, enabled, options, onChange, onToggle, color = "orange" }: { 
+  label: string, current: string, enabled: boolean, options: OscillatorType[], onChange: (val: OscillatorType) => void, onToggle: () => void, color?: ColorKey
+}) => {
+  const theme = COLOR_MAPS[color];
+  const dotColorClass = enabled ? theme.bg : 'bg-zinc-800';
+  const activeBtnClass = enabled ? `${theme.bg} text-black ${theme.border}` : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700';
+
+  return (
+    <div className={`flex flex-col gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl border transition-all ${enabled ? 'bg-zinc-900/40 border-zinc-800/40' : 'bg-zinc-950/20 border-zinc-900/50 opacity-60'}`}>
+      <div className="flex justify-between items-center">
+        <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.1em] text-zinc-500 font-bold">{label}</span>
+        <div className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${dotColorClass} ${enabled ? 'shadow-lg' : ''}`} />
+      </div>
+      <div className="flex gap-1 w-full">
+        {options.map((opt) => (
+          <button
+            key={opt}
+            onClick={() => {
+              if (current === opt) {
+                onToggle();
+              } else {
+                onChange(opt);
+                if (!enabled) onToggle();
+              }
+            }}
+            className={`flex-1 py-1.5 sm:py-2 rounded-lg text-[8px] sm:text-[9px] uppercase font-bold tracking-tighter transition-all border ${
+              current === opt && enabled ? activeBtnClass : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700'
+            }`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
     </div>
-    <div className="flex gap-1 w-full">
-      {options.map((opt) => (
-        <button
-          key={opt}
-          onClick={() => {
-            if (current === opt) {
-              onToggle();
-            } else {
-              onChange(opt);
-              if (!enabled) onToggle();
-            }
-          }}
-          className={`flex-1 py-1.5 sm:py-2 rounded-lg text-[8px] sm:text-[9px] uppercase font-bold tracking-tighter transition-all border ${
-            current === opt && enabled
-              ? 'bg-orange-500 text-black border-orange-400' 
-              : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700'
-          }`}
-        >
-          {opt}
-        </button>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
 const CollapsiblePanel = ({ 
   title, 
   icon: Icon, 
   children, 
   isCollapsed, 
-  onToggle 
+  onToggle,
+  color = "orange"
 }: { 
   title: string, 
   icon: any, 
   children: ReactNode, 
   isCollapsed: boolean, 
-  onToggle: () => void 
+  onToggle: () => void,
+  color?: ColorKey
 }) => {
+  const theme = COLOR_MAPS[color];
+  
   return (
     <div className="flex flex-col bg-zinc-900/20 rounded-2xl border border-zinc-800/20 overflow-hidden transition-all duration-300 h-fit">
       <button 
         onClick={onToggle}
         className="flex items-center justify-between p-3 sm:p-4 hover:bg-zinc-800/20 transition-colors w-full text-left group"
       >
-        <div className="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-300 transition-colors">
-          <Icon className="w-3.5 h-3.5 sm:w-4 h-4" />
+        <div className={`flex items-center gap-2 text-zinc-500 ${theme.hoverText} transition-colors`}>
+          <Icon className={`w-3.5 h-3.5 sm:w-4 h-4 ${isCollapsed ? '' : theme.text}`} />
           <h2 className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-black">{title}</h2>
         </div>
         <ChevronDown className={`w-3.5 h-3.5 sm:w-4 h-4 text-zinc-600 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
@@ -203,6 +226,7 @@ export default function App() {
   const { playNote, stopNote, stopAllNotes, getAnalyser } = useSynth(settings);
   const [activeKeys, setActiveKeys] = useState<Set<number>>(new Set());
   const activeKeysRef = useRef(activeKeys);
+  const pointerMapRef = useRef<Map<number, number>>(new Map());
 
   const keys = useMemo(() => generateKeys(visibleOctaves, octaveShift), [visibleOctaves, octaveShift]);
 
@@ -213,21 +237,52 @@ export default function App() {
   const handlePanic = useCallback(() => {
     stopAllNotes();
     setActiveKeys(new Set());
+    pointerMapRef.current.clear();
   }, [stopAllNotes]);
 
-  const handleKeyDown = useCallback((midi: number) => {
-    if (activeKeysRef.current.has(midi)) return;
+  const handleKeyDown = useCallback((midi: number, pointerId?: number) => {
+    if (pointerId !== undefined) {
+      const prevMidi = pointerMapRef.current.get(pointerId);
+      if (prevMidi === midi) return;
+      if (prevMidi !== undefined) {
+        // Release previous key for this pointer (glissando)
+        stopNote(prevMidi);
+        setActiveKeys(prev => {
+          const next = new Set(prev);
+          // Only delete if no other pointer is holding this key
+          const otherPointersHoldingKey = Array.from(pointerMapRef.current.entries())
+            .some(([pId, m]) => pId !== pointerId && m === prevMidi);
+          if (!otherPointersHoldingKey) {
+            next.delete(prevMidi);
+          }
+          return next;
+        });
+      }
+      pointerMapRef.current.set(pointerId, midi);
+    }
+
     setActiveKeys(prev => {
+      if (prev.has(midi)) return prev;
       const next = new Set(prev);
       next.add(midi);
       return next;
     });
     playNote(getFreq(midi), midi);
-  }, [playNote]);
+  }, [playNote, stopNote]);
 
-  const handleKeyUp = useCallback((midi: number) => {
-    if (!activeKeysRef.current.has(midi)) return;
+  const handleKeyUp = useCallback((midi: number, pointerId?: number) => {
+    if (pointerId !== undefined) {
+      pointerMapRef.current.delete(pointerId);
+    }
+
+    // Only stop if no other pointer is holding this key
+    const otherPointersHoldingKey = Array.from(pointerMapRef.current.entries())
+      .some(([_, m]) => m === midi);
+    
+    if (otherPointersHoldingKey) return;
+
     setActiveKeys(prev => {
+      if (!prev.has(midi)) return prev;
       const next = new Set(prev);
       next.delete(midi);
       return next;
@@ -238,20 +293,15 @@ export default function App() {
   // Global cleanup to prevent stuck notes
   useEffect(() => {
     const handleGlobalUp = (e: PointerEvent) => {
-      // If we're not touching a key, clear everything
-      const target = e.target as HTMLElement;
-      if (!target || typeof target.closest !== 'function' || !target.closest('.synth-key')) {
-        // Only clear if we actually have active keys to avoid unnecessary state updates
-        if (activeKeysRef.current.size > 0) {
-          activeKeysRef.current.forEach(midi => handleKeyUp(midi));
-        }
+      const midi = pointerMapRef.current.get(e.pointerId);
+      if (midi !== undefined) {
+        handleKeyUp(midi, e.pointerId);
       }
     };
     
     const handleBlur = () => {
-      if (activeKeysRef.current.size > 0) {
-        activeKeysRef.current.forEach(midi => handleKeyUp(midi));
-      }
+      setActiveKeys(new Set());
+      pointerMapRef.current.clear();
       stopAllNotes();
     };
 
@@ -262,7 +312,6 @@ export default function App() {
     const handlePointerMove = (e: PointerEvent) => {
       if (isDraggingHeight) {
         const newHeight = window.innerHeight - e.clientY;
-        // Clamp height between 80px and 60% of viewport
         setKeyboardHeight(Math.max(80, Math.min(window.innerHeight * 0.6, newHeight)));
       }
     };
@@ -295,36 +344,13 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-sm md:text-lg font-black tracking-tighter uppercase italic leading-none">
-              <span className="md:hidden">TV</span>
-              <span className="hidden md:inline">TONEVOID</span>
+              TONEVOID
             </h1>
-            <p className="text-[6px] sm:text-[8px] text-zinc-500 uppercase tracking-[0.2em] font-mono mt-0.5 sm:mt-1 hidden md:block">Poly-Synth</p>
+            <p className="text-[6px] sm:text-[8px] text-zinc-500 uppercase tracking-[0.2em] font-mono mt-0.5 sm:mt-1">Poly-Synth</p>
           </div>
         </div>
         
         <div className="flex items-center gap-2 md:gap-4">
-          {/* View Selector */}
-          <div className="flex items-center gap-1 md:gap-2 bg-zinc-900/80 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-zinc-800">
-            <div className="flex flex-col items-center px-1 sm:px-2">
-              <span className="text-[6px] sm:text-[7px] uppercase tracking-[0.1em] text-zinc-600 font-black hidden md:block">View</span>
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                {[1, 2, 3, 4, 5].map(num => (
-                  <button
-                    key={num}
-                    onClick={() => setVisibleOctaves(num)}
-                    className={`w-4 h-4 md:w-5 md:h-5 rounded flex items-center justify-center text-[8px] md:text-[9px] font-bold transition-all ${
-                      visibleOctaves === num 
-                        ? 'bg-orange-500 text-black' 
-                        : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
-                    }`}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
           {/* Preset Selector */}
           <div className="flex items-center gap-1 md:gap-2 bg-zinc-900/50 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-zinc-800/50">
             <select 
@@ -346,39 +372,96 @@ export default function App() {
 
           <div className="h-6 sm:h-8 w-px bg-zinc-800/50 hidden md:block" />
 
-          {/* Octave Shift */}
-          <div className="flex items-center gap-1 md:gap-2 bg-zinc-900/80 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-zinc-800">
-            <button 
-              onClick={() => setOctaveShift(s => Math.max(-3, s - 1))}
-              className="p-1 md:p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 transition-colors"
-            >
-              <ChevronLeft className="w-3 h-3 md:w-4 md:h-4" />
-            </button>
-            <div className="flex flex-col items-center min-w-[30px] md:min-w-[50px]">
-              <span className="text-[6px] sm:text-[7px] uppercase tracking-[0.1em] text-zinc-600 font-black hidden md:block">Octave</span>
-              <span className="text-xs md:text-sm font-mono font-black text-orange-500">{octaveShift > 0 ? `+${octaveShift}` : octaveShift}</span>
+          {/* Volume & Panic Control */}
+          <div className="flex items-center gap-1 sm:gap-2 bg-zinc-900/80 p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-zinc-800 group">
+            <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2">
+              <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500 group-hover:text-orange-500 transition-colors" />
+              <div className="relative w-12 sm:w-24 h-1.5 sm:h-2 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={settings.masterVolume}
+                  onChange={(e) => setSettings(s => ({ ...s, masterVolume: parseFloat(e.target.value) }))}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                <div 
+                  className="absolute top-0 left-0 h-full bg-orange-500 transition-all duration-75"
+                  style={{ width: `${settings.masterVolume * 100}%` }}
+                />
+              </div>
             </div>
+            <div className="w-px h-4 bg-zinc-800 mx-0.5 sm:mx-1" />
             <button 
-              onClick={() => setOctaveShift(s => Math.min(3, s + 1))}
-              className="p-1 md:p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 transition-colors"
+              onClick={handlePanic}
+              className="p-1 sm:p-1.5 hover:bg-red-900/40 text-zinc-600 hover:text-red-500 rounded-lg transition-all"
+              title="Panic"
             >
-              <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
+              <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
-
-          {/* Panic Button */}
-          <button 
-            onClick={handlePanic}
-            className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 bg-zinc-900 hover:bg-red-900/40 text-zinc-600 hover:text-red-500 rounded-lg sm:rounded-xl border border-zinc-800 transition-all group"
-            title="Panic"
-          >
-            <AlertCircle className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-          </button>
         </div>
       </header>
 
       {/* Grid Controls Area */}
-      <main className="flex-1 p-2 sm:p-4 pb-64 overflow-y-auto custom-scrollbar">
+      <main className="flex-1 p-2 sm:p-4 pb-[450px] overflow-y-auto custom-scrollbar">
+        {/* Keyboard Controls Section */}
+        <div className="mb-4 flex flex-wrap items-center gap-3 sm:gap-4 p-2 sm:p-3 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
+          <div className="flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-indigo-500" />
+            <span className="text-[10px] uppercase font-black tracking-widest text-zinc-400">Keyboard Config</span>
+          </div>
+          
+          <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
+
+          <div className="flex items-center gap-4">
+            {/* View Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] uppercase tracking-[0.1em] text-zinc-600 font-black">Visible Octaves</span>
+              <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-zinc-800">
+                {[1, 2, 3, 4, 5].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => setVisibleOctaves(num)}
+                    className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold transition-all ${
+                      visibleOctaves === num 
+                        ? 'bg-indigo-500 text-black shadow-[0_0_10px_rgba(99,102,241,0.4)]' 
+                        : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-4 w-px bg-zinc-800" />
+
+            {/* Octave Shift */}
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] uppercase tracking-[0.1em] text-zinc-600 font-black">Octave Shift</span>
+              <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-zinc-800">
+                <button 
+                  onClick={() => setOctaveShift(s => Math.max(-3, s - 1))}
+                  className="w-6 h-6 flex items-center justify-center hover:bg-zinc-800 rounded text-zinc-400 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div className="min-w-[24px] text-center">
+                  <span className="text-xs font-mono font-black text-indigo-500">{octaveShift > 0 ? `+${octaveShift}` : octaveShift}</span>
+                </div>
+                <button 
+                  onClick={() => setOctaveShift(s => Math.min(3, s + 1))}
+                  className="w-6 h-6 flex items-center justify-center hover:bg-zinc-800 rounded text-zinc-400 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Waveform Preview Section - Now Collapsible */}
         <div className="mb-4 sm:mb-6">
           <CollapsiblePanel 
@@ -401,6 +484,7 @@ export default function App() {
             icon={Waves} 
             isCollapsed={collapsedPanels['oscillators']} 
             onToggle={() => togglePanel('oscillators')}
+            color="pink"
           >
             <div className="space-y-4">
               <div className="space-y-3">
@@ -411,12 +495,14 @@ export default function App() {
                   options={['sawtooth', 'square', 'sine', 'triangle']}
                   onChange={(val) => setSettings(s => ({ ...s, osc1Wave: val }))}
                   onToggle={() => setSettings(s => ({ ...s, osc1Enabled: !s.osc1Enabled }))}
+                  color="pink"
                 />
                 <ControlKnob 
                   label="O1 Gain" 
                   value={settings.osc1Gain} 
                   min={0} max={1} step={0.01}
                   onChange={(val) => setSettings(s => ({ ...s, osc1Gain: val }))}
+                  color="pink"
                 />
               </div>
 
@@ -428,21 +514,14 @@ export default function App() {
                   options={['sawtooth', 'square', 'sine', 'triangle']}
                   onChange={(val) => setSettings(s => ({ ...s, osc2Wave: val }))}
                   onToggle={() => setSettings(s => ({ ...s, osc2Enabled: !s.osc2Enabled }))}
+                  color="pink"
                 />
                 <ControlKnob 
                   label="O2 Gain" 
                   value={settings.osc2Gain} 
                   min={0} max={1} step={0.01}
                   onChange={(val) => setSettings(s => ({ ...s, osc2Gain: val }))}
-                />
-              </div>
-
-              <div className="pt-2 border-t border-zinc-800/30">
-                <ControlKnob 
-                  label="Noise" 
-                  value={settings.noiseLevel} 
-                  min={0} max={1} step={0.01}
-                  onChange={(val) => setSettings(s => ({ ...s, noiseLevel: val }))}
+                  color="pink"
                 />
               </div>
             </div>
@@ -454,31 +533,43 @@ export default function App() {
             icon={Zap} 
             isCollapsed={collapsedPanels['effects']} 
             onToggle={() => togglePanel('effects')}
+            color="emerald"
           >
             <div className="grid grid-cols-2 gap-3">
+              <ControlKnob 
+                label="Noise" 
+                value={settings.noiseLevel} 
+                min={0} max={1} step={0.01}
+                onChange={(val) => setSettings(s => ({ ...s, noiseLevel: val }))}
+                color="emerald"
+              />
               <ControlKnob 
                 label="Growl" 
                 value={settings.growl} 
                 min={0} max={10} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, growl: val }))}
+                color="emerald"
               />
               <ControlKnob 
                 label="Dist" 
                 value={settings.distortion} 
                 min={0} max={10} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, distortion: val }))}
+                color="emerald"
               />
               <ControlKnob 
                 label="Fuzz" 
                 value={settings.fuzz} 
                 min={0} max={10} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, fuzz: val }))}
+                color="emerald"
               />
               <ControlKnob 
                 label="Reverb" 
                 value={settings.reverb} 
                 min={0} max={10} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, reverb: val }))}
+                color="emerald"
               />
             </div>
           </CollapsiblePanel>
@@ -489,6 +580,7 @@ export default function App() {
             icon={Sliders} 
             isCollapsed={collapsedPanels['eq']} 
             onToggle={() => togglePanel('eq')}
+            color="blue"
           >
             <div className="grid grid-cols-2 gap-3">
               <ControlKnob 
@@ -497,6 +589,7 @@ export default function App() {
                 min={-12} max={12} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, eqLow: val }))}
                 unit="dB"
+                color="blue"
               />
               <ControlKnob 
                 label="Mid" 
@@ -504,6 +597,7 @@ export default function App() {
                 min={-12} max={12} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, eqMid: val }))}
                 unit="dB"
+                color="blue"
               />
               <ControlKnob 
                 label="High" 
@@ -511,6 +605,7 @@ export default function App() {
                 min={-12} max={12} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, eqHigh: val }))}
                 unit="dB"
+                color="blue"
               />
             </div>
           </CollapsiblePanel>
@@ -521,6 +616,7 @@ export default function App() {
             icon={Wind} 
             isCollapsed={collapsedPanels['filter']} 
             onToggle={() => togglePanel('filter')}
+            color="purple"
           >
             <div className="grid grid-cols-1 gap-3">
               <ControlKnob 
@@ -529,6 +625,7 @@ export default function App() {
                 min={20} max={10000} step={10}
                 onChange={(val) => setSettings(s => ({ ...s, filterCutoff: val }))}
                 unit="Hz"
+                color="purple"
               />
               <div className="grid grid-cols-2 gap-2">
                 <ControlKnob 
@@ -536,12 +633,14 @@ export default function App() {
                   value={settings.filterResonance} 
                   min={0} max={1} step={0.01}
                   onChange={(val) => setSettings(s => ({ ...s, filterResonance: val }))}
+                  color="purple"
                 />
                 <ControlKnob 
                   label="Env" 
                   value={settings.filterEnvAmount} 
                   min={0} max={1} step={0.01}
                   onChange={(val) => setSettings(s => ({ ...s, filterEnvAmount: val }))}
+                  color="purple"
                 />
               </div>
             </div>
@@ -553,6 +652,7 @@ export default function App() {
             icon={Zap} 
             isCollapsed={collapsedPanels['envelope']} 
             onToggle={() => togglePanel('envelope')}
+            color="yellow"
           >
             <div className="grid grid-cols-2 gap-3">
               <ControlKnob 
@@ -561,6 +661,7 @@ export default function App() {
                 min={0.01} max={2} step={0.01}
                 onChange={(val) => setSettings(s => ({ ...s, attack: val }))}
                 unit="s"
+                color="yellow"
               />
               <ControlKnob 
                 label="Decay" 
@@ -568,12 +669,14 @@ export default function App() {
                 min={0.01} max={2} step={0.01}
                 onChange={(val) => setSettings(s => ({ ...s, decay: val }))}
                 unit="s"
+                color="yellow"
               />
               <ControlKnob 
                 label="Sustain" 
                 value={settings.sustain} 
                 min={0} max={1} step={0.01}
                 onChange={(val) => setSettings(s => ({ ...s, sustain: val }))}
+                color="yellow"
               />
               <ControlKnob 
                 label="Release" 
@@ -581,6 +684,7 @@ export default function App() {
                 min={0.01} max={5} step={0.01}
                 onChange={(val) => setSettings(s => ({ ...s, release: val }))}
                 unit="s"
+                color="yellow"
               />
             </div>
           </CollapsiblePanel>
@@ -591,6 +695,7 @@ export default function App() {
             icon={Settings2} 
             isCollapsed={collapsedPanels['lfo']} 
             onToggle={() => togglePanel('lfo')}
+            color="green"
           >
             <div className="grid grid-cols-2 gap-3">
               <ControlKnob 
@@ -599,12 +704,14 @@ export default function App() {
                 min={0.1} max={20} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, lfoRate: val }))}
                 unit="Hz"
+                color="green"
               />
               <ControlKnob 
                 label="Depth" 
                 value={settings.lfoDepth} 
                 min={0} max={1} step={0.01}
                 onChange={(val) => setSettings(s => ({ ...s, lfoDepth: val }))}
+                color="green"
               />
             </div>
           </CollapsiblePanel>

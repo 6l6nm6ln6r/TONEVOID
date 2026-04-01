@@ -86,11 +86,13 @@ export interface SynthSettings {
   release: number;
   lfoRate: number;
   lfoDepth: number;
+  masterVolume: number;
 }
 
 export const useSynth = (settings: SynthSettings) => {
   const audioCtx = useRef<AudioContext | null>(null);
   const masterGain = useRef<GainNode | null>(null);
+  const limiter = useRef<DynamicsCompressorNode | null>(null);
   const analyser = useRef<AnalyserNode | null>(null);
   const activeOscillators = useRef<Map<number, any>>(new Map());
   const allVoices = useRef<Set<any>>(new Set());
@@ -192,12 +194,21 @@ export const useSynth = (settings: SynthSettings) => {
     if (!audioCtx.current) {
       audioCtx.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       masterGain.current = audioCtx.current.createGain();
-      masterGain.current.gain.value = 0.3;
+      masterGain.current.gain.value = settings.masterVolume;
+      
+      // Add a limiter to prevent digital distortion/clipping
+      limiter.current = audioCtx.current.createDynamicsCompressor();
+      limiter.current.threshold.setValueAtTime(-1.0, audioCtx.current.currentTime);
+      limiter.current.knee.setValueAtTime(0, audioCtx.current.currentTime);
+      limiter.current.ratio.setValueAtTime(20, audioCtx.current.currentTime);
+      limiter.current.attack.setValueAtTime(0.003, audioCtx.current.currentTime);
+      limiter.current.release.setValueAtTime(0.1, audioCtx.current.currentTime);
       
       analyser.current = audioCtx.current.createAnalyser();
       analyser.current.fftSize = 2048;
       
-      masterGain.current.connect(analyser.current);
+      masterGain.current.connect(limiter.current);
+      limiter.current.connect(analyser.current);
       analyser.current.connect(audioCtx.current.destination);
       
       noiseBuffer.current = createNoiseBuffer(audioCtx.current);
@@ -208,13 +219,9 @@ export const useSynth = (settings: SynthSettings) => {
     
     // Ensure master gain is restored if it was muted by stopAllNotes
     if (masterGain.current) {
-      const currentGain = masterGain.current.gain.value;
-      if (currentGain < 0.1) {
-        masterGain.current.gain.cancelScheduledValues(audioCtx.current.currentTime);
-        masterGain.current.gain.setTargetAtTime(0.3, audioCtx.current.currentTime, 0.05);
-      }
+      masterGain.current.gain.setTargetAtTime(settings.masterVolume, audioCtx.current.currentTime, 0.05);
     }
-  }, []);
+  }, [settings.masterVolume]);
 
   const stopNote = useCallback((midiNote: number, immediate: boolean = false) => {
     const voice = activeOscillators.current.get(midiNote);
@@ -510,6 +517,11 @@ export const useSynth = (settings: SynthSettings) => {
       voice.filter.setFrequency(settings.filterCutoff, now);
       voice.filter.setResonance(settings.filterResonance, now);
     });
+
+    // Update master volume
+    if (masterGain.current) {
+      masterGain.current.gain.setTargetAtTime(settings.masterVolume, now, 0.05);
+    }
   }, [settings]);
 
   const stopAllNotes = useCallback(() => {
@@ -522,7 +534,7 @@ export const useSynth = (settings: SynthSettings) => {
       // Restore master gain after a short delay
       setTimeout(() => {
         if (masterGain.current && audioCtx.current) {
-          masterGain.current.gain.setTargetAtTime(0.3, audioCtx.current.currentTime, 0.05);
+          masterGain.current.gain.setTargetAtTime(settings.masterVolume, audioCtx.current.currentTime, 0.05);
         }
       }, 300);
     }

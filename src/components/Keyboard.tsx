@@ -15,8 +15,8 @@ interface KeyboardProps {
   activeKeys: Set<number>;
   keyboardHeight: number;
   visibleOctaves: number;
-  handleKeyDown: (midi: number) => void;
-  handleKeyUp: (midi: number) => void;
+  handleKeyDown: (midi: number, pointerId?: number) => void;
+  handleKeyUp: (midi: number, pointerId?: number) => void;
 }
 
 export const Keyboard = React.memo(({ 
@@ -31,8 +31,25 @@ export const Keyboard = React.memo(({
   const blackKeys = useMemo(() => keys.filter(k => k.isBlack), [keys]);
   const totalWhiteKeys = whiteKeys.length;
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (e.buttons !== 1 && e.pointerType === 'mouse') return;
+    
+    const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
+    const keyElement = target?.closest('.synth-key') as HTMLElement;
+    
+    if (keyElement) {
+      const midi = parseInt(keyElement.getAttribute('data-midi') || '');
+      if (!isNaN(midi)) {
+        handleKeyDown(midi, e.pointerId);
+      }
+    }
+  };
+
   return (
-    <div className="h-full w-full overflow-x-auto custom-scrollbar select-none pt-4">
+    <div 
+      className="h-full w-full overflow-x-auto custom-scrollbar select-none pt-4 touch-none"
+      onPointerMove={handlePointerMove}
+    >
       <div 
         className="relative h-full"
         style={{ 
@@ -45,6 +62,7 @@ export const Keyboard = React.memo(({
             {whiteKeys.map((note) => (
               <motion.button
                 key={note.midi}
+                data-midi={note.midi}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ 
                   opacity: 1, 
@@ -60,19 +78,14 @@ export const Keyboard = React.memo(({
                   y: { duration: 0.1 }
                 }}
                 onPointerDown={(e) => { 
-                  handleKeyDown(note.midi); 
+                  (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+                  handleKeyDown(note.midi, e.pointerId); 
                 }}
                 onPointerUp={(e) => { 
-                  handleKeyUp(note.midi); 
-                }}
-                onPointerEnter={(e) => {
-                  if (e.buttons === 1) handleKeyDown(note.midi);
-                }}
-                onPointerLeave={(e) => {
-                  handleKeyUp(note.midi);
+                  handleKeyUp(note.midi, e.pointerId); 
                 }}
                 onPointerCancel={(e) => { 
-                  handleKeyUp(note.midi); 
+                  handleKeyUp(note.midi, e.pointerId); 
                 }}
                 className={`
                   synth-key relative flex-1 border-x border-zinc-900/20 transition-colors duration-75
@@ -128,6 +141,7 @@ export const Keyboard = React.memo(({
               return (
                 <motion.button
                   key={note.midi}
+                  data-midi={note.midi}
                   initial={{ opacity: 0, y: -20, x: "-50%" }}
                   animate={{ 
                     opacity: 1, 
@@ -143,19 +157,14 @@ export const Keyboard = React.memo(({
                     y: { duration: 0.1 }
                   }}
                   onPointerDown={(e) => { 
-                    handleKeyDown(note.midi); 
+                    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+                    handleKeyDown(note.midi, e.pointerId); 
                   }}
                   onPointerUp={(e) => { 
-                    handleKeyUp(note.midi); 
-                  }}
-                  onPointerEnter={(e) => {
-                    if (e.buttons === 1) handleKeyDown(note.midi);
-                  }}
-                  onPointerLeave={(e) => {
-                    handleKeyUp(note.midi);
+                    handleKeyUp(note.midi, e.pointerId); 
                   }}
                   onPointerCancel={(e) => { 
-                    handleKeyUp(note.midi); 
+                    handleKeyUp(note.midi, e.pointerId); 
                   }}
                   className={`
                     synth-key absolute top-0 z-10 rounded-b-lg border-b-4 border-zinc-800 transition-colors duration-75 pointer-events-auto

@@ -24,7 +24,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.6,
     release: 0.4,
     lfoRate: 2.5,
-    lfoDepth: 0.1
+    lfoDepth: 0.1,
+    masterVolume: 0.3
   },
   "Deep Bass": {
     osc1Enabled: true,
@@ -49,7 +50,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.4,
     release: 0.2,
     lfoRate: 1.0,
-    lfoDepth: 0.05
+    lfoDepth: 0.05,
+    masterVolume: 0.3
   },
   "Acid Lead": {
     osc1Enabled: true,
@@ -74,7 +76,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.2,
     release: 0.1,
     lfoRate: 6.0,
-    lfoDepth: 0.2
+    lfoDepth: 0.2,
+    masterVolume: 0.3
   },
   "Dreamy Pad": {
     osc1Enabled: true,
@@ -99,7 +102,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.8,
     release: 2.5,
     lfoRate: 0.5,
-    lfoDepth: 0.3
+    lfoDepth: 0.3,
+    masterVolume: 0.3
   },
   "Bright Pluck": {
     osc1Enabled: true,
@@ -124,7 +128,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.0,
     release: 0.1,
     lfoRate: 4.0,
-    lfoDepth: 0.05
+    lfoDepth: 0.05,
+    masterVolume: 0.3
   },
   "Aggressive Fuzz": {
     osc1Enabled: true,
@@ -149,7 +154,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.9,
     release: 0.3,
     lfoRate: 8.0,
-    lfoDepth: 0.15
+    lfoDepth: 0.15,
+    masterVolume: 0.3
   },
   "Ethereal Chimes": {
     osc1Enabled: true,
@@ -174,7 +180,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.0,
     release: 2.0,
     lfoRate: 0.2,
-    lfoDepth: 0.4
+    lfoDepth: 0.4,
+    masterVolume: 0.3
   },
   "Sub Bass": {
     osc1Enabled: true,
@@ -199,7 +206,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 1.0,
     release: 0.1,
     lfoRate: 0.5,
-    lfoDepth: 0.0
+    lfoDepth: 0.0,
+    masterVolume: 0.3
   },
   "Sync Lead": {
     osc1Enabled: true,
@@ -224,7 +232,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.5,
     release: 0.2,
     lfoRate: 5.0,
-    lfoDepth: 0.2
+    lfoDepth: 0.2,
+    masterVolume: 0.3
   },
   "Soft Strings": {
     osc1Enabled: true,
@@ -249,7 +258,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.7,
     release: 1.5,
     lfoRate: 3.5,
-    lfoDepth: 0.1
+    lfoDepth: 0.1,
+    masterVolume: 0.3
   },
   "Industrial Noise": {
     osc1Enabled: true,
@@ -274,7 +284,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 1.0,
     release: 0.05,
     lfoRate: 15.0,
-    lfoDepth: 0.8
+    lfoDepth: 0.8,
+    masterVolume: 0.3
   },
   "Space Drone": {
     osc1Enabled: true,
@@ -299,7 +310,8 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 1.0,
     release: 4.0,
     lfoRate: 0.1,
-    lfoDepth: 0.6
+    lfoDepth: 0.6,
+    masterVolume: 0.3
   },
   "Funky Saw": {
     osc1Enabled: true,
@@ -324,6 +336,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     sustain: 0.3,
     release: 0.1,
     lfoRate: 4.5,
-    lfoDepth: 0.15
+    lfoDepth: 0.15,
+    masterVolume: 0.3
   }
 };
