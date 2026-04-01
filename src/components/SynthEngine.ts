@@ -54,6 +54,12 @@ class MoogFilter {
   getInput() {
     return this.input;
   }
+
+  disconnect() {
+    this.input.disconnect();
+    this.output.disconnect();
+    this.filters.forEach(f => f.disconnect());
+  }
 }
 
 export interface SynthSettings {
@@ -63,7 +69,6 @@ export interface SynthSettings {
   osc2Enabled: boolean;
   osc2Wave: OscillatorType;
   osc2Gain: number;
-  osc2Detune: number;
   noiseLevel: number;
   growl: number;
   distortion: number;
@@ -91,6 +96,13 @@ export const useSynth = (settings: SynthSettings) => {
   const allVoices = useRef<Set<any>>(new Set());
 
   const noiseBuffer = useRef<AudioBuffer | null>(null);
+  const reverbBuffer = useRef<AudioBuffer | null>(null);
+  const growlCurve = useRef<Float32Array | null>(null);
+  const distortionCurve = useRef<Float32Array | null>(null);
+  const fuzzCurve = useRef<Float32Array | null>(null);
+  const lastGrowlAmount = useRef<number>(-1);
+  const lastDistortionAmount = useRef<number>(-1);
+  const lastFuzzAmount = useRef<number>(-1);
 
   useEffect(() => {
     return () => {
@@ -110,14 +122,38 @@ export const useSynth = (settings: SynthSettings) => {
     return buffer;
   };
 
+  const makeGrowlCurve = (amount: number) => {
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    if (amount <= 0) {
+      for (let i = 0; i < n_samples; ++i) curve[i] = (i * 2) / n_samples - 1;
+      return curve;
+    }
+    // More aggressive overdrive curve
+    const k = amount * 40;
+    for (let i = 0; i < n_samples; ++i) {
+      const x = (i * 2) / n_samples - 1;
+      // Soft-clipping with higher saturation
+      curve[i] = Math.tanh(x * (1 + k)) / Math.tanh(1 + k);
+    }
+    return curve;
+  };
+
   const makeDistortionCurve = (amount: number) => {
     const n_samples = 44100;
     const curve = new Float32Array(n_samples);
-    const k = amount * 100;
+    if (amount <= 0) {
+      for (let i = 0; i < n_samples; ++i) curve[i] = (i * 2) / n_samples - 1;
+      return curve;
+    }
+    // Much harder clipping for distortion
+    const k = amount * 300;
     for (let i = 0; i < n_samples; ++i) {
       const x = (i * 2) / n_samples - 1;
-      // Soft saturation curve
-      curve[i] = (Math.PI + k) * x / (Math.PI + k * Math.abs(x));
+      const deg = Math.PI / 180;
+      // Harder clipping formula with slight asymmetry for "grit"
+      const bias = 1 + (amount * 0.2 * Math.sign(x));
+      curve[i] = (3 + k) * x * bias * 20 * deg / (Math.PI + k * Math.abs(x));
     }
     return curve;
   };
@@ -125,15 +161,17 @@ export const useSynth = (settings: SynthSettings) => {
   const makeFuzzCurve = (amount: number) => {
     const n_samples = 44100;
     const curve = new Float32Array(n_samples);
-    const k = amount * 20;
+    if (amount <= 0) {
+      for (let i = 0; i < n_samples; ++i) curve[i] = (i * 2) / n_samples - 1;
+      return curve;
+    }
+    const k = amount * 200;
     for (let i = 0; i < n_samples; ++i) {
       const x = (i * 2) / n_samples - 1;
-      if (amount === 0) {
-        curve[i] = x;
-      } else {
-        // Harder clipping for fuzz, normalized to keep volume consistent
-        curve[i] = Math.tanh(x * k) / Math.tanh(k || 1);
-      }
+      const s = Math.sign(x);
+      const a = Math.abs(x);
+      const bias = x > 0 ? 1.8 : 0.6;
+      curve[i] = s * (1 - Math.exp(-k * a * bias));
     }
     return curve;
   };
@@ -204,6 +242,9 @@ export const useSynth = (settings: SynthSettings) => {
             voice.osc2.disconnect();
             voice.noise.disconnect();
             voice.gain.disconnect();
+            if (voice.filter && typeof voice.filter.disconnect === 'function') {
+              voice.filter.disconnect();
+            }
           } catch (e) {
             // Already stopped
           }
@@ -280,31 +321,48 @@ export const useSynth = (settings: SynthSettings) => {
 
     osc2.type = settings.osc2Wave;
     osc2.frequency.setValueAtTime(frequency, now);
-    osc2.detune.setValueAtTime(settings.osc2Detune, now);
     osc2Gain.gain.setValueAtTime(settings.osc2Enabled ? settings.osc2Gain : 0, now);
 
     noise.buffer = noiseBuffer.current;
     noise.loop = true;
     noiseGain.gain.setValueAtTime(settings.noiseLevel, now);
 
-    // Growl/Overdrive logic - more aggressive
+    // Growl/Overdrive logic - soft saturation
+    const growlAmount = settings.growl / 10;
     const growlDrive = audioCtx.current.createGain();
-    growlDrive.gain.setValueAtTime(1 + settings.growl * 15, now);
-    growlNode.curve = makeDistortionCurve(settings.growl);
+    growlDrive.gain.setValueAtTime(1 + growlAmount * 15, now);
+    if (lastGrowlAmount.current !== settings.growl || !growlCurve.current) {
+      growlCurve.current = makeGrowlCurve(growlAmount);
+      lastGrowlAmount.current = settings.growl;
+    }
+    growlNode.curve = growlCurve.current;
     
     // Distortion logic
+    const distAmount = settings.distortion / 10;
     const distDrive = audioCtx.current.createGain();
-    distDrive.gain.setValueAtTime(1 + settings.distortion * 20, now);
-    distNode.curve = makeDistortionCurve(settings.distortion);
+    distDrive.gain.setValueAtTime(1 + distAmount * 40, now);
+    if (lastDistortionAmount.current !== settings.distortion || !distortionCurve.current) {
+      distortionCurve.current = makeDistortionCurve(distAmount);
+      lastDistortionAmount.current = settings.distortion;
+    }
+    distNode.curve = distortionCurve.current;
     
     // Fuzz logic
+    const fuzzAmount = settings.fuzz / 10;
     const fuzzDrive = audioCtx.current.createGain();
-    fuzzDrive.gain.setValueAtTime(1 + settings.fuzz * 50, now);
-    fuzzNode.curve = makeFuzzCurve(settings.fuzz);
+    fuzzDrive.gain.setValueAtTime(1 + fuzzAmount * 80, now);
+    if (lastFuzzAmount.current !== settings.fuzz || !fuzzCurve.current) {
+      fuzzCurve.current = makeFuzzCurve(fuzzAmount);
+      lastFuzzAmount.current = settings.fuzz;
+    }
+    fuzzNode.curve = fuzzCurve.current;
     
     // Reverb logic
-    reverbNode.buffer = createReverbBuffer(audioCtx.current);
-    reverbGain.gain.setValueAtTime(settings.reverb, now);
+    if (!reverbBuffer.current) {
+      reverbBuffer.current = createReverbBuffer(audioCtx.current);
+    }
+    reverbNode.buffer = reverbBuffer.current;
+    reverbGain.gain.setValueAtTime(settings.reverb / 10, now);
 
     // ADSR Envelope
     const attackTime = Math.max(0.001, settings.attack);
@@ -319,6 +377,10 @@ export const useSynth = (settings: SynthSettings) => {
     filter.setFrequency(baseCutoff, now);
     filter.setResonance(settings.filterResonance, now);
 
+    // Connect oscillators to a pre-effect gain to prevent accidental clipping
+    const preEffectGain = audioCtx.current.createGain();
+    preEffectGain.gain.setValueAtTime(0.4, now); // Headroom for 3 sources
+    
     osc1.connect(osc1Gain);
     osc1Gain.connect(oscGain);
     
@@ -328,25 +390,29 @@ export const useSynth = (settings: SynthSettings) => {
     noise.connect(noiseGain);
     noiseGain.connect(oscGain);
     
+    oscGain.connect(preEffectGain);
+    
     // Connect chain
-    let chain: AudioNode = oscGain;
+    let chain: AudioNode = preEffectGain;
     
     // Effects
-    chain.connect(growlDrive);
     growlDrive.connect(growlNode);
+    chain.connect(growlDrive);
     chain = growlNode;
     
-    const distIn = audioCtx.current.createGain();
-    chain.connect(distIn);
-    distIn.connect(distDrive);
     distDrive.connect(distNode);
+    chain.connect(distDrive);
     chain = distNode;
     
-    const fuzzIn = audioCtx.current.createGain();
-    chain.connect(fuzzIn);
-    fuzzIn.connect(fuzzDrive);
     fuzzDrive.connect(fuzzNode);
+    chain.connect(fuzzDrive);
     chain = fuzzNode;
+
+    // Post-effect makeup gain
+    const postEffectGain = audioCtx.current.createGain();
+    postEffectGain.gain.setValueAtTime(2.5, now); // Restore volume
+    chain.connect(postEffectGain);
+    chain = postEffectGain;
     
     // EQ
     chain.connect(lowEq);
@@ -370,10 +436,81 @@ export const useSynth = (settings: SynthSettings) => {
     osc2.start();
     noise.start();
 
-    const voice = { osc1, osc2, noise, gain: oscGain, filter, midiNote };
+    const voice = { 
+      osc1, osc2, noise, 
+      osc1Gain, osc2Gain, noiseGain,
+      growlDrive, distDrive, fuzzDrive, growlNode, distNode, fuzzNode,
+      reverbGain, 
+      lowEq, midEq, highEq,
+      gain: oscGain, filter, midiNote 
+    };
     allVoices.current.add(voice);
     activeOscillators.current.set(midiNote, voice);
   }, [settings, initAudio, stopNote]);
+
+  // Real-time parameter updates for active voices
+  useEffect(() => {
+    if (!audioCtx.current) return;
+    const now = audioCtx.current.currentTime;
+
+    // Pre-generate curves if needed to avoid redundant work in the loop
+    const growlAmount = settings.growl / 10;
+    const distAmount = settings.distortion / 10;
+    const fuzzAmount = settings.fuzz / 10;
+    const reverbAmount = settings.reverb / 10;
+
+    let newGrowlCurve = growlCurve.current;
+    if (lastGrowlAmount.current !== settings.growl) {
+      newGrowlCurve = makeGrowlCurve(growlAmount);
+      growlCurve.current = newGrowlCurve;
+      lastGrowlAmount.current = settings.growl;
+    }
+
+    let newDistCurve = distortionCurve.current;
+    if (lastDistortionAmount.current !== settings.distortion) {
+      newDistCurve = makeDistortionCurve(distAmount);
+      distortionCurve.current = newDistCurve;
+      lastDistortionAmount.current = settings.distortion;
+    }
+
+    let newFuzzCurve = fuzzCurve.current;
+    if (lastFuzzAmount.current !== settings.fuzz) {
+      newFuzzCurve = makeFuzzCurve(fuzzAmount);
+      fuzzCurve.current = newFuzzCurve;
+      lastFuzzAmount.current = settings.fuzz;
+    }
+
+    activeOscillators.current.forEach((voice) => {
+      // Oscillators
+      voice.osc1.type = settings.osc1Wave;
+      voice.osc2.type = settings.osc2Wave;
+      voice.osc1Gain.gain.setTargetAtTime(settings.osc1Enabled ? settings.osc1Gain : 0, now, 0.01);
+      voice.osc2Gain.gain.setTargetAtTime(settings.osc2Enabled ? settings.osc2Gain : 0, now, 0.01);
+      voice.noiseGain.gain.setTargetAtTime(settings.noiseLevel, now, 0.01);
+
+      // Effects Drive
+      voice.growlDrive.gain.setTargetAtTime(1 + growlAmount * 15, now, 0.01);
+      voice.distDrive.gain.setTargetAtTime(1 + distAmount * 40, now, 0.01);
+      voice.fuzzDrive.gain.setTargetAtTime(1 + fuzzAmount * 80, now, 0.01);
+
+      // Effects Curves
+      if (voice.growlNode.curve !== newGrowlCurve) voice.growlNode.curve = newGrowlCurve;
+      if (voice.distNode.curve !== newDistCurve) voice.distNode.curve = newDistCurve;
+      if (voice.fuzzNode.curve !== newFuzzCurve) voice.fuzzNode.curve = newFuzzCurve;
+
+      // Reverb
+      voice.reverbGain.gain.setTargetAtTime(reverbAmount, now, 0.01);
+
+      // EQ
+      voice.lowEq.gain.setTargetAtTime(settings.eqLow, now, 0.01);
+      voice.midEq.gain.setTargetAtTime(settings.eqMid, now, 0.01);
+      voice.highEq.gain.setTargetAtTime(settings.eqHigh, now, 0.01);
+
+      // Filter
+      voice.filter.setFrequency(settings.filterCutoff, now);
+      voice.filter.setResonance(settings.filterResonance, now);
+    });
+  }, [settings]);
 
   const stopAllNotes = useCallback(() => {
     if (masterGain.current && audioCtx.current) {

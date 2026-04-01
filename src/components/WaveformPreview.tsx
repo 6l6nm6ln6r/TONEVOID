@@ -15,21 +15,26 @@ export const WaveformPreview = ({ getAnalyser }: WaveformPreviewProps) => {
     if (!ctx) return;
 
     let animationId: number;
+    let dataArray: Uint8Array | null = null;
 
     const draw = () => {
       animationId = requestAnimationFrame(draw);
 
-      const analyser = getAnalyser();
-      if (!analyser) {
+      const currentAnalyser = getAnalyser();
+      if (!currentAnalyser) {
         // Clear canvas if no analyser
         ctx.fillStyle = 'rgba(5, 5, 5, 0.5)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         return;
       }
 
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      analyser.getByteTimeDomainData(dataArray);
+      if (!dataArray || dataArray.length !== currentAnalyser.frequencyBinCount) {
+        dataArray = new Uint8Array(currentAnalyser.frequencyBinCount);
+      }
+
+      currentAnalyser.getByteTimeDomainData(dataArray);
+
+      const bufferLength = dataArray.length;
 
       // Clear canvas
       ctx.fillStyle = 'rgba(5, 5, 5, 0.5)';
