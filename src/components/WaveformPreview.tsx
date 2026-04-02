@@ -20,6 +20,12 @@ export const WaveformPreview = ({ getAnalyser }: WaveformPreviewProps) => {
     const draw = () => {
       animationId = requestAnimationFrame(draw);
 
+      // Sync canvas resolution with display size
+      if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+      }
+
       const currentAnalyser = getAnalyser();
       if (!currentAnalyser) {
         // Clear canvas if no analyser
@@ -73,16 +79,11 @@ export const WaveformPreview = ({ getAnalyser }: WaveformPreviewProps) => {
   }, [getAnalyser]);
 
   return (
-    <div className="w-full h-full min-h-[120px] bg-black/40 rounded-xl border border-zinc-800/40 overflow-hidden relative">
+    <div className="w-full h-full bg-black/20 relative overflow-hidden">
       <canvas
         ref={canvasRef}
-        className="w-full h-full"
-        width={400}
-        height={150}
+        className="w-full h-full block"
       />
-      <div className="absolute top-2 left-2 pointer-events-none">
-        <span className="text-[8px] uppercase tracking-[0.2em] text-zinc-600 font-black">Waveform</span>
-      </div>
     </div>
   );
 };

@@ -62,6 +62,8 @@ class MoogFilter {
   }
 }
 
+export type ControlType = 'knobs' | 'sliders' | 'text';
+
 export interface SynthSettings {
   osc1Enabled: boolean;
   osc1Wave: OscillatorType;
@@ -87,6 +89,11 @@ export interface SynthSettings {
   lfoRate: number;
   lfoDepth: number;
   masterVolume: number;
+  // Keyboard Config
+  visibleOctaves?: number;
+  octaveShift?: number;
+  controlType?: ControlType;
+  basePresetName?: string;
 }
 
 export const useSynth = (settings: SynthSettings) => {
@@ -227,15 +234,19 @@ export const useSynth = (settings: SynthSettings) => {
     const voice = activeOscillators.current.get(midiNote);
     if (voice && audioCtx.current) {
       const now = audioCtx.current.currentTime;
-      const releaseTime = immediate ? 0.001 : Math.max(0.001, settings.release);
+      // Minimum release to avoid pops, even if immediate
+      const releaseTime = immediate ? 0.005 : Math.max(0.005, settings.release);
       
       try {
         voice.gain.gain.cancelScheduledValues(now);
         const currentVal = voice.gain.gain.value;
         voice.gain.gain.setValueAtTime(currentVal, now);
         
-        if (currentVal > 0) {
-          voice.gain.gain.exponentialRampToValueAtTime(0.001, now + releaseTime);
+        // Use exponential ramp for natural decay, but ensure it doesn't start from 0
+        if (currentVal > 0.0001) {
+          voice.gain.gain.exponentialRampToValueAtTime(0.0001, now + releaseTime);
+          // Final linear ramp to absolute zero to ensure silence
+          voice.gain.gain.linearRampToValueAtTime(0, now + releaseTime + 0.001);
         } else {
           voice.gain.gain.linearRampToValueAtTime(0, now + releaseTime);
         }
@@ -261,12 +272,8 @@ export const useSynth = (settings: SynthSettings) => {
           }
         };
 
-        if (immediate) {
-          cleanup();
-        } else {
-          // Use a slightly longer timeout to ensure the exponential ramp completes
-          setTimeout(cleanup, (releaseTime * 1000) + 100);
-        }
+        // Use a slightly longer timeout to ensure the ramp completes
+        setTimeout(cleanup, (releaseTime * 1000) + 50);
       } catch (e) {
         activeOscillators.current.delete(midiNote);
       }
@@ -372,12 +379,14 @@ export const useSynth = (settings: SynthSettings) => {
     reverbGain.gain.setValueAtTime(settings.reverb / 10, now);
 
     // ADSR Envelope
-    const attackTime = Math.max(0.001, settings.attack);
-    const decayTime = Math.max(0.001, settings.decay);
+    const attackTime = Math.max(0.005, settings.attack);
+    const decayTime = Math.max(0.005, settings.decay);
     
     oscGain.gain.setValueAtTime(0, now);
+    // Use a tiny bit of time for the initial 0 to avoid pops if re-triggering
+    oscGain.gain.setTargetAtTime(0, now, 0.001);
     oscGain.gain.linearRampToValueAtTime(1, now + attackTime);
-    oscGain.gain.linearRampToValueAtTime(settings.sustain, now + attackTime + decayTime);
+    oscGain.gain.linearRampToValueAtTime(Math.max(0.001, settings.sustain), now + attackTime + decayTime);
 
     // Filter Envelope
     const baseCutoff = settings.filterCutoff;

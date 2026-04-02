@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo, ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo, ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
@@ -19,7 +19,7 @@ import {
   Sliders,
   Library
 } from 'lucide-react';
-import { useSynth, SynthSettings } from './components/SynthEngine';
+import { useSynth, SynthSettings, ControlType } from './components/SynthEngine';
 import { WaveformPreview } from './components/WaveformPreview';
 import { Keyboard } from './components/Keyboard';
 import { PRESETS } from './lib/presets';
@@ -80,48 +80,92 @@ const COLOR_MAPS = {
 
 type ColorKey = keyof typeof COLOR_MAPS;
 
-const ControlKnob = ({ label, value, min, max, step = 1, onChange, unit = "", color = "orange" }: { 
-  label: string, value: number, min: number, max: number, step?: number, onChange: (val: number) => void, unit?: string, color?: ColorKey
+const ControlKnob = ({ label, value, min, max, step = 1, onChange, unit = "", color = "orange", type = "knobs" }: { 
+  label: string, value: number, min: number, max: number, step?: number, onChange: (val: number) => void, unit?: string, color?: ColorKey, type?: ControlType
 }) => {
   const theme = COLOR_MAPS[color];
+  const isCompact = type !== 'knobs';
   
   return (
-    <div className="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 bg-zinc-900/40 rounded-xl border border-zinc-800/40 w-full max-w-[140px]">
+    <div className={`flex flex-col items-center p-2 sm:p-3 bg-zinc-900/40 rounded-xl border border-zinc-800/40 w-full max-w-[140px] ${isCompact ? 'gap-1' : 'gap-1.5 sm:gap-2'}`}>
       <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.1em] text-zinc-500 font-bold text-center">{label}</span>
-      <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(parseFloat(e.target.value))}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-        />
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 56 56">
-          <circle cx="28" cy="28" r="24" className="stroke-zinc-800 fill-none" strokeWidth="3" />
-          <circle
-            cx="28"
-            cy="28"
-            r="24"
-            className={`${theme.stroke} fill-none transition-all duration-200`}
-            strokeWidth="3"
-            strokeDasharray={150.8}
-            strokeDashoffset={150.8 - (150.8 * (value - min)) / (max - min)}
+      
+      {type === 'knobs' && (
+        <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onChange={(e) => onChange(parseFloat(e.target.value))}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
           />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div 
-            className="w-6 h-6 sm:w-8 sm:h-8 bg-zinc-800 rounded-full shadow-xl border border-zinc-700 flex items-center justify-center transition-transform duration-200"
-            style={{ transform: `rotate(${(value - min) / (max - min) * 270 - 135}deg)` }}
-          >
-            <div className={`w-0.5 h-2 sm:w-1 sm:h-3 ${theme.bg} rounded-full -translate-y-1.5 sm:-translate-y-2`} />
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 56 56">
+            <circle cx="28" cy="28" r="24" className="stroke-zinc-800 fill-none" strokeWidth="3" />
+            <circle
+              cx="28"
+              cy="28"
+              r="24"
+              className={`${theme.stroke} fill-none transition-all duration-200`}
+              strokeWidth="3"
+              strokeDasharray={150.8}
+              strokeDashoffset={150.8 - (150.8 * (value - min)) / (max - min)}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div 
+              className="w-6 h-6 sm:w-8 sm:h-8 bg-zinc-800 rounded-full shadow-xl border border-zinc-700 flex items-center justify-center transition-transform duration-200"
+              style={{ transform: `rotate(${(value - min) / (max - min) * 270 - 135}deg)` }}
+            >
+              <div className={`w-0.5 h-2 sm:w-1 sm:h-3 ${theme.bg} rounded-full -translate-y-1.5 sm:-translate-y-2`} />
+            </div>
           </div>
         </div>
-      </div>
-      <span className="text-[9px] sm:text-[10px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded-full border border-zinc-800">
-        {value.toFixed(step >= 1 ? 0 : 2)}{unit}
-      </span>
+      )}
+
+      {type === 'sliders' && (
+        <div className="w-full h-6 sm:h-8 flex items-center px-1">
+          <div className="relative w-full h-1.5 sm:h-2 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50">
+            <input
+              type="range"
+              min={min}
+              max={max}
+              step={step}
+              value={value}
+              onChange={(e) => onChange(parseFloat(e.target.value))}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div 
+              className={`absolute top-0 left-0 h-full ${theme.bg} transition-all duration-75`}
+              style={{ width: `${((value - min) / (max - min)) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {type === 'text' && (
+        <div className="w-full h-6 sm:h-8 flex items-center justify-center">
+          <input
+            type="number"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              if (!isNaN(val)) onChange(val);
+            }}
+            className="w-full bg-black/40 border border-zinc-800 rounded-lg px-2 py-1 text-center text-[10px] font-mono text-zinc-300 focus:border-orange-500 outline-none transition-colors dark-arrows"
+          />
+        </div>
+      )}
+
+      {type === 'knobs' && (
+        <span className="text-[9px] sm:text-[10px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded-full border border-zinc-800">
+          {value.toFixed(step >= 1 ? 0 : 2)}{unit}
+        </span>
+      )}
     </div>
   );
 };
@@ -210,19 +254,129 @@ const CollapsiblePanel = ({
   );
 };
 
+interface UserPresetButtonProps {
+  id: string;
+  onSave: () => void;
+  onLoad: () => void;
+  hasPreset: boolean;
+  isActive: boolean;
+  key?: string;
+}
+
+const UserPresetButton = ({ id, onSave, onLoad, hasPreset, isActive }: UserPresetButtonProps) => {
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handlePointerDown = (e: ReactPointerEvent) => {
+    // Prevent context menu on long press
+    const target = e.currentTarget;
+    const handleContextMenu = (ev: Event) => ev.preventDefault();
+    target.addEventListener('contextmenu', handleContextMenu, { once: true });
+
+    setIsSaving(false);
+    timerRef.current = setTimeout(() => {
+      setIsSaving(true);
+      onSave();
+      // Visual feedback
+      setTimeout(() => setIsSaving(false), 1000);
+    }, 800);
+  };
+
+  const handlePointerUp = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      if (!isSaving) {
+        onLoad();
+      }
+      timerRef.current = null;
+    }
+  };
+
+  return (
+    <button
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={() => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+        }
+      }}
+      className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] font-black transition-all border relative overflow-hidden ${
+        isSaving 
+          ? 'bg-orange-500 text-black border-orange-400 scale-95' 
+          : isActive
+            ? 'bg-purple-600 text-white border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)]'
+            : hasPreset 
+              ? 'bg-zinc-800 text-orange-500 border-zinc-700 hover:border-orange-500' 
+              : 'bg-zinc-900/50 text-zinc-600 border-zinc-800/50 hover:border-zinc-700'
+      }`}
+      title={hasPreset ? `Click to load, Long press to overwrite ${id}` : `Long press to save current to ${id}`}
+    >
+      {id}
+      {isSaving && (
+        <motion.div 
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 2, opacity: 1 }}
+          className="absolute inset-0 bg-white/20 rounded-full pointer-events-none"
+        />
+      )}
+    </button>
+  );
+};
+
 export default function App() {
-  const [settings, setSettings] = useState<SynthSettings>(PRESETS["Vintage"]);
-  const [currentPreset, setCurrentPreset] = useState("Vintage");
+  const [octaveShift, setOctaveShift] = useState(0);
+  const [visibleOctaves, setVisibleOctaves] = useState(4);
+  const [keyboardHeight, setKeyboardHeight] = useState(220);
+  const [isDraggingHeight, setIsDraggingHeight] = useState(false);
+  const [controlType, setControlType] = useState<ControlType>('knobs');
   const [collapsedPanels, setCollapsedPanels] = useState<Record<string, boolean>>({});
+  const [currentPreset, setCurrentPreset] = useState("Vintage");
+  const [activeUserPresetSlot, setActiveUserPresetSlot] = useState<string | null>(null);
+  const [settings, setSettings] = useState<SynthSettings>({ ...PRESETS["Vintage"], basePresetName: "Vintage" });
+  
+  const [userPresets, setUserPresets] = useState<Record<string, SynthSettings | null>>(() => {
+    try {
+      const saved = localStorage.getItem('tonevoid_user_presets');
+      return saved ? JSON.parse(saved) : { A: null, B: null, C: null };
+    } catch (e) {
+      return { A: null, B: null, C: null };
+    }
+  });
+
+  const saveUserPreset = (id: string) => {
+    const newPresets = { 
+      ...userPresets, 
+      [id]: { 
+        ...settings,
+        visibleOctaves,
+        octaveShift,
+        controlType,
+        basePresetName: currentPreset
+      } 
+    };
+    setUserPresets(newPresets);
+    localStorage.setItem('tonevoid_user_presets', JSON.stringify(newPresets));
+    setActiveUserPresetSlot(id);
+  };
+
+  const loadUserPreset = (id: string) => {
+    const preset = userPresets[id];
+    if (preset) {
+      setSettings(preset);
+      if (preset.visibleOctaves !== undefined) setVisibleOctaves(preset.visibleOctaves);
+      if (preset.octaveShift !== undefined) setOctaveShift(preset.octaveShift);
+      if (preset.controlType !== undefined) setControlType(preset.controlType);
+      if (preset.basePresetName) setCurrentPreset(preset.basePresetName);
+      setActiveUserPresetSlot(id);
+    }
+  };
 
   const togglePanel = (id: string) => {
     setCollapsedPanels(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const [octaveShift, setOctaveShift] = useState(0);
-  const [visibleOctaves, setVisibleOctaves] = useState(4);
-  const [keyboardHeight, setKeyboardHeight] = useState(220);
-  const [isDraggingHeight, setIsDraggingHeight] = useState(false);
   const { playNote, stopNote, stopAllNotes, getAnalyser } = useSynth(settings);
   const [activeKeys, setActiveKeys] = useState<Set<number>>(new Set());
   const activeKeysRef = useRef(activeKeys);
@@ -352,21 +506,39 @@ export default function App() {
         
         <div className="flex items-center gap-2 md:gap-4">
           {/* Preset Selector */}
-          <div className="flex items-center gap-1 md:gap-2 bg-zinc-900/50 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-zinc-800/50">
+          <div className="flex items-center gap-1 md:gap-2 bg-zinc-900/80 p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-zinc-800">
+            <div className="flex items-center gap-1 mr-1 sm:mr-2">
+              {['A', 'B', 'C'].map(id => (
+                <UserPresetButton 
+                  key={id} 
+                  id={id} 
+                  hasPreset={!!userPresets[id]}
+                  isActive={activeUserPresetSlot === id}
+                  onSave={() => saveUserPreset(id)}
+                  onLoad={() => loadUserPreset(id)}
+                />
+              ))}
+            </div>
+            <div className="w-px h-4 bg-zinc-800 mr-1 sm:mr-2" />
             <select 
               value={currentPreset}
               onChange={(e) => {
                 const name = e.target.value;
                 setCurrentPreset(name);
-                setSettings(PRESETS[name]);
+                if (PRESETS[name]) {
+                  setSettings({ ...PRESETS[name], basePresetName: name });
+                  setActiveUserPresetSlot(null);
+                }
               }}
               className="bg-transparent text-zinc-300 text-[8px] md:text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer px-2 md:px-3 py-0.5 sm:py-1"
             >
-              {Object.keys(PRESETS).map(name => (
-                <option key={name} value={name} className="bg-zinc-900 text-zinc-300">
-                  {name}
-                </option>
-              ))}
+              <optgroup label="Voice / Factory Presets" className="bg-zinc-900 text-zinc-500 text-[8px]">
+                {Object.keys(PRESETS).map(name => (
+                  <option key={name} value={name} className="bg-zinc-900 text-zinc-300">
+                    {name}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
@@ -405,7 +577,7 @@ export default function App() {
       </header>
 
       {/* Grid Controls Area */}
-      <main className="flex-1 p-2 sm:p-4 pb-[450px] overflow-y-auto custom-scrollbar">
+      <main className="flex-1 p-2 sm:p-4 pb-[600px] overflow-y-auto custom-scrollbar">
         {/* Keyboard Controls Section */}
         <div className="mb-4 flex flex-wrap items-center gap-3 sm:gap-4 p-2 sm:p-3 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
           <div className="flex items-center gap-2">
@@ -415,7 +587,7 @@ export default function App() {
           
           <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             {/* View Selector */}
             <div className="flex items-center gap-2">
               <span className="text-[8px] uppercase tracking-[0.1em] text-zinc-600 font-black">Visible Octaves</span>
@@ -459,21 +631,74 @@ export default function App() {
                 </button>
               </div>
             </div>
+
+            <div className="h-4 w-px bg-zinc-800 hidden md:block" />
+
+            {/* Control Style Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] uppercase tracking-[0.1em] text-zinc-600 font-black">Controls</span>
+              <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-zinc-800">
+                {(['knobs', 'sliders', 'text'] as ControlType[]).map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setControlType(type)}
+                    className={`px-2 py-1 rounded text-[8px] uppercase font-bold transition-all ${
+                      controlType === type 
+                        ? 'bg-indigo-500 text-black shadow-[0_0_10px_rgba(99,102,241,0.4)]' 
+                        : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Waveform Preview Section - Now Collapsible */}
-        <div className="mb-4 sm:mb-6">
-          <CollapsiblePanel 
-            title="Live Waveform Visualizer" 
-            icon={Activity} 
-            isCollapsed={collapsedPanels['visualizer']} 
-            onToggle={() => togglePanel('visualizer')}
-          >
-            <div className="h-24 sm:h-32 md:h-40 w-full rounded-xl sm:rounded-2xl overflow-hidden border border-zinc-800/50 bg-black/40">
-              <WaveformPreview getAnalyser={getAnalyser} />
-            </div>
-          </CollapsiblePanel>
+        {/* Waveform Preview Section - Full Card with Overlapping Toggle */}
+        <div className="mb-4 sm:mb-6 relative">
+          <AnimatePresence initial={false}>
+            {!collapsedPanels['visualizer'] ? (
+              <motion.div
+                key="expanded"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                className="overflow-hidden rounded-2xl border border-zinc-800/50 bg-black/40 shadow-2xl relative"
+              >
+                <div className="h-32 sm:h-40 md:h-48 w-full">
+                  <WaveformPreview getAnalyser={getAnalyser} />
+                </div>
+                {/* Overlapping Toggle Button - Expanded */}
+                <button 
+                  onClick={() => togglePanel('visualizer')}
+                  className="absolute top-3 right-3 z-20 p-2 rounded-xl bg-black/40 text-zinc-400 border border-zinc-800/50 hover:bg-orange-500 hover:text-black hover:border-orange-400 backdrop-blur-md transition-all duration-300"
+                  title="Hide Visualizer"
+                >
+                  <ChevronDown className="w-4 h-4 rotate-180" />
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="collapsed"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex justify-end"
+              >
+                <button 
+                  onClick={() => togglePanel('visualizer')}
+                  className="p-2 px-4 rounded-xl bg-zinc-900/80 text-zinc-400 border border-zinc-800 hover:bg-orange-500 hover:text-black hover:border-orange-400 transition-all duration-300 flex items-center gap-2 shadow-xl"
+                >
+                  <Activity className="w-4 h-4" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Show Visualizer</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 items-start">
@@ -503,6 +728,7 @@ export default function App() {
                   min={0} max={1} step={0.01}
                   onChange={(val) => setSettings(s => ({ ...s, osc1Gain: val }))}
                   color="pink"
+                  type={controlType}
                 />
               </div>
 
@@ -522,6 +748,7 @@ export default function App() {
                   min={0} max={1} step={0.01}
                   onChange={(val) => setSettings(s => ({ ...s, osc2Gain: val }))}
                   color="pink"
+                  type={controlType}
                 />
               </div>
             </div>
@@ -542,6 +769,7 @@ export default function App() {
                 min={0} max={1} step={0.01}
                 onChange={(val) => setSettings(s => ({ ...s, noiseLevel: val }))}
                 color="emerald"
+                type={controlType}
               />
               <ControlKnob 
                 label="Growl" 
@@ -549,6 +777,7 @@ export default function App() {
                 min={0} max={10} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, growl: val }))}
                 color="emerald"
+                type={controlType}
               />
               <ControlKnob 
                 label="Dist" 
@@ -556,6 +785,7 @@ export default function App() {
                 min={0} max={10} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, distortion: val }))}
                 color="emerald"
+                type={controlType}
               />
               <ControlKnob 
                 label="Fuzz" 
@@ -563,6 +793,7 @@ export default function App() {
                 min={0} max={10} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, fuzz: val }))}
                 color="emerald"
+                type={controlType}
               />
               <ControlKnob 
                 label="Reverb" 
@@ -570,6 +801,7 @@ export default function App() {
                 min={0} max={10} step={0.1}
                 onChange={(val) => setSettings(s => ({ ...s, reverb: val }))}
                 color="emerald"
+                type={controlType}
               />
             </div>
           </CollapsiblePanel>
@@ -590,6 +822,7 @@ export default function App() {
                 onChange={(val) => setSettings(s => ({ ...s, eqLow: val }))}
                 unit="dB"
                 color="blue"
+                type={controlType}
               />
               <ControlKnob 
                 label="Mid" 
@@ -598,6 +831,7 @@ export default function App() {
                 onChange={(val) => setSettings(s => ({ ...s, eqMid: val }))}
                 unit="dB"
                 color="blue"
+                type={controlType}
               />
               <ControlKnob 
                 label="High" 
@@ -606,6 +840,7 @@ export default function App() {
                 onChange={(val) => setSettings(s => ({ ...s, eqHigh: val }))}
                 unit="dB"
                 color="blue"
+                type={controlType}
               />
             </div>
           </CollapsiblePanel>
@@ -626,6 +861,7 @@ export default function App() {
                 onChange={(val) => setSettings(s => ({ ...s, filterCutoff: val }))}
                 unit="Hz"
                 color="purple"
+                type={controlType}
               />
               <div className="grid grid-cols-2 gap-2">
                 <ControlKnob 
@@ -634,6 +870,7 @@ export default function App() {
                   min={0} max={1} step={0.01}
                   onChange={(val) => setSettings(s => ({ ...s, filterResonance: val }))}
                   color="purple"
+                  type={controlType}
                 />
                 <ControlKnob 
                   label="Env" 
@@ -641,6 +878,7 @@ export default function App() {
                   min={0} max={1} step={0.01}
                   onChange={(val) => setSettings(s => ({ ...s, filterEnvAmount: val }))}
                   color="purple"
+                  type={controlType}
                 />
               </div>
             </div>
@@ -662,6 +900,7 @@ export default function App() {
                 onChange={(val) => setSettings(s => ({ ...s, attack: val }))}
                 unit="s"
                 color="yellow"
+                type={controlType}
               />
               <ControlKnob 
                 label="Decay" 
@@ -670,6 +909,7 @@ export default function App() {
                 onChange={(val) => setSettings(s => ({ ...s, decay: val }))}
                 unit="s"
                 color="yellow"
+                type={controlType}
               />
               <ControlKnob 
                 label="Sustain" 
@@ -677,6 +917,7 @@ export default function App() {
                 min={0} max={1} step={0.01}
                 onChange={(val) => setSettings(s => ({ ...s, sustain: val }))}
                 color="yellow"
+                type={controlType}
               />
               <ControlKnob 
                 label="Release" 
@@ -685,6 +926,7 @@ export default function App() {
                 onChange={(val) => setSettings(s => ({ ...s, release: val }))}
                 unit="s"
                 color="yellow"
+                type={controlType}
               />
             </div>
           </CollapsiblePanel>
@@ -705,6 +947,7 @@ export default function App() {
                 onChange={(val) => setSettings(s => ({ ...s, lfoRate: val }))}
                 unit="Hz"
                 color="green"
+                type={controlType}
               />
               <ControlKnob 
                 label="Depth" 
@@ -712,9 +955,13 @@ export default function App() {
                 min={0} max={1} step={0.01}
                 onChange={(val) => setSettings(s => ({ ...s, lfoDepth: val }))}
                 color="green"
+                type={controlType}
               />
             </div>
           </CollapsiblePanel>
+
+          {/* Extra Bottom Margin */}
+          <div className="h-[500px] w-full pointer-events-none" />
         </div>
       </main>
 
@@ -758,6 +1005,13 @@ export default function App() {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #3f3f46;
+        }
+        
+        /* Dark themed number input arrows */
+        .dark-arrows::-webkit-inner-spin-button,
+        .dark-arrows::-webkit-outer-spin-button {
+          filter: invert(1) brightness(0.5);
+          cursor: pointer;
         }
       `}</style>
     </div>
