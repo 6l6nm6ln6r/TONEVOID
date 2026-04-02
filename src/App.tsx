@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo, ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Activity, 
   Waves, 
   Zap, 
   Wind, 
@@ -491,17 +490,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#050505] text-zinc-100 font-sans selection:bg-orange-500/30 flex flex-col relative overflow-hidden">
       {/* Header */}
-      <header className="p-2 sm:p-4 flex justify-between items-center border-b border-zinc-900/50 backdrop-blur-md sticky top-0 z-50 bg-black/80">
+      <header className="py-0 px-2 sm:py-[3px] sm:px-4 flex justify-between items-center border-b border-zinc-900/50 backdrop-blur-md sticky top-0 z-50 bg-black/80">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.3)]">
-            <Activity className="text-black w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-          <div>
-            <h1 className="text-sm md:text-lg font-black tracking-tighter uppercase italic leading-none">
-              TONEVOID
-            </h1>
-            <p className="text-[6px] sm:text-[8px] text-zinc-500 uppercase tracking-[0.2em] font-mono mt-0.5 sm:mt-1">Poly-Synth</p>
-          </div>
+          <img src="/tvlogo.svg" alt="TONEVOID Logo" className="h-[38px] sm:h-[58px] w-auto" referrerPolicy="no-referrer" />
         </div>
         
         <div className="flex items-center gap-2 md:gap-4">
