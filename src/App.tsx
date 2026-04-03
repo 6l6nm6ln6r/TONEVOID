@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo, ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import ReactGA from 'react-ga4';
 import { 
   Activity,
   Waves, 
@@ -359,6 +360,12 @@ export default function App() {
     setUserPresets(newPresets);
     localStorage.setItem('tonevoid_user_presets', JSON.stringify(newPresets));
     setActiveUserPresetSlot(id);
+    
+    ReactGA.event({
+      category: "Synth",
+      action: "user_preset_save",
+      label: id
+    });
   };
 
   const loadUserPreset = (id: string) => {
@@ -370,6 +377,12 @@ export default function App() {
       if (preset.controlType !== undefined) setControlType(preset.controlType);
       if (preset.basePresetName) setCurrentPreset(preset.basePresetName);
       setActiveUserPresetSlot(id);
+      
+      ReactGA.event({
+        category: "Synth",
+        action: "user_preset_load",
+        label: id
+      });
     }
   };
 
@@ -422,6 +435,15 @@ export default function App() {
       return next;
     });
     playNote(getFreq(midi), midi);
+
+    // Track note play (limited to once per interaction start to avoid flooding)
+    if (activeKeysRef.current.size === 0) {
+      ReactGA.event({
+        category: "Synth",
+        action: "play_note",
+        label: midi.toString()
+      });
+    }
   }, [playNote, stopNote]);
 
   const handleKeyUp = useCallback((midi: number, pointerId?: number) => {
@@ -520,6 +542,12 @@ export default function App() {
                 if (PRESETS[name]) {
                   setSettings({ ...PRESETS[name], basePresetName: name });
                   setActiveUserPresetSlot(null);
+                  
+                  ReactGA.event({
+                    category: "Synth",
+                    action: "preset_change",
+                    label: name
+                  });
                 }
               }}
               className="bg-transparent text-zinc-300 text-[8px] md:text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer px-2 md:px-3 py-0.5 sm:py-1"
