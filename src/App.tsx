@@ -199,7 +199,7 @@ const WaveSelector = ({ label, current, enabled, options, onChange, onToggle, co
               current === opt && enabled ? activeBtnClass : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700'
             }`}
           >
-            {opt}
+            {opt === 'sawtooth' ? 'Saw' : opt}
           </button>
         ))}
       </div>
@@ -845,7 +845,7 @@ export default function App() {
             onToggle={() => togglePanel('filter')}
             color="purple"
           >
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <ControlKnob 
                 label="Cutoff" 
                 value={settings.filterCutoff} 
@@ -855,24 +855,31 @@ export default function App() {
                 color="purple"
                 type={controlType}
               />
-              <div className="grid grid-cols-2 gap-2">
-                <ControlKnob 
-                  label="Res" 
-                  value={settings.filterResonance} 
-                  min={0} max={1} step={0.01}
-                  onChange={(val) => setSettings(s => ({ ...s, filterResonance: val }))}
-                  color="purple"
-                  type={controlType}
-                />
-                <ControlKnob 
-                  label="Env" 
-                  value={settings.filterEnvAmount} 
-                  min={0} max={1} step={0.01}
-                  onChange={(val) => setSettings(s => ({ ...s, filterEnvAmount: val }))}
-                  color="purple"
-                  type={controlType}
-                />
-              </div>
+              <ControlKnob 
+                label="Res" 
+                value={settings.filterResonance} 
+                min={0} max={1} step={0.01}
+                onChange={(val) => setSettings(s => ({ ...s, filterResonance: val }))}
+                color="purple"
+                type={controlType}
+              />
+              <ControlKnob 
+                label="Env" 
+                value={settings.filterEnvAmount} 
+                min={0} max={1} step={0.01}
+                onChange={(val) => setSettings(s => ({ ...s, filterEnvAmount: val }))}
+                color="purple"
+                type={controlType}
+              />
+              <ControlKnob 
+                label="Decay" 
+                value={settings.filterDecay} 
+                min={0.01} max={2} step={0.01}
+                onChange={(val) => setSettings(s => ({ ...s, filterDecay: val }))}
+                unit="s"
+                color="purple"
+                type={controlType}
+              />
             </div>
           </CollapsiblePanel>
 

@@ -86,6 +86,7 @@ export interface SynthSettings {
   filterCutoff: number;
   filterResonance: number;
   filterEnvAmount: number;
+  filterDecay: number;
   attack: number;
   decay: number;
   sustain: number;
@@ -435,7 +436,17 @@ export const useSynth = (settings: SynthSettings) => {
 
     // Filter Envelope
     const baseCutoff = settings.filterCutoff;
+    const envAmount = settings.filterEnvAmount * 8000; // Max envelope sweep
+    const filterDecayTime = Math.max(0.01, settings.filterDecay);
+    
     filter.setFrequency(baseCutoff, now);
+    // Envelope sweep: start at cutoff + envAmount, decay to cutoff
+    filter.getFilters().forEach(f => {
+      f.frequency.cancelScheduledValues(now);
+      f.frequency.setValueAtTime(baseCutoff + envAmount, now);
+      f.frequency.exponentialRampToValueAtTime(Math.max(20, baseCutoff), now + filterDecayTime);
+    });
+    
     filter.setResonance(settings.filterResonance, now);
 
     // Connect oscillators to a pre-effect gain to prevent accidental clipping
