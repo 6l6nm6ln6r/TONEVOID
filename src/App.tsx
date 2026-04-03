@@ -925,7 +925,7 @@ export default function App() {
 
           {/* LFO Section */}
           <CollapsiblePanel 
-            title="LFO" 
+            title="LFO (Filter)" 
             icon={Settings2} 
             isCollapsed={collapsedPanels['lfo']} 
             onToggle={() => togglePanel('lfo')}
@@ -947,6 +947,64 @@ export default function App() {
                 min={0} max={1} step={0.01}
                 onChange={(val) => setSettings(s => ({ ...s, lfoDepth: val }))}
                 color="green"
+                type={controlType}
+              />
+            </div>
+          </CollapsiblePanel>
+
+          {/* Tremolo Section */}
+          <CollapsiblePanel 
+            title="Tremolo" 
+            icon={Volume2} 
+            isCollapsed={collapsedPanels['tremolo']} 
+            onToggle={() => togglePanel('tremolo')}
+            color="orange"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <ControlKnob 
+                label="Rate" 
+                value={settings.tremoloRate} 
+                min={0.1} max={20} step={0.1}
+                onChange={(val) => setSettings(s => ({ ...s, tremoloRate: val }))}
+                unit="Hz"
+                color="orange"
+                type={controlType}
+              />
+              <ControlKnob 
+                label="Depth" 
+                value={settings.tremoloDepth} 
+                min={0} max={1} step={0.01}
+                onChange={(val) => setSettings(s => ({ ...s, tremoloDepth: val }))}
+                color="orange"
+                type={controlType}
+              />
+            </div>
+          </CollapsiblePanel>
+
+          {/* Vibrato Section */}
+          <CollapsiblePanel 
+            title="Vibrato" 
+            icon={Music} 
+            isCollapsed={collapsedPanels['vibrato']} 
+            onToggle={() => togglePanel('vibrato')}
+            color="indigo"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <ControlKnob 
+                label="Rate" 
+                value={settings.vibratoRate} 
+                min={0.1} max={20} step={0.1}
+                onChange={(val) => setSettings(s => ({ ...s, vibratoRate: val }))}
+                unit="Hz"
+                color="indigo"
+                type={controlType}
+              />
+              <ControlKnob 
+                label="Depth" 
+                value={settings.vibratoDepth} 
+                min={0} max={1} step={0.01}
+                onChange={(val) => setSettings(s => ({ ...s, vibratoDepth: val }))}
+                color="indigo"
                 type={controlType}
               />
             </div>

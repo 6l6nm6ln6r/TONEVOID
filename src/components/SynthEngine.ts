@@ -38,6 +38,10 @@ class MoogFilter {
     });
   }
 
+  getFilters() {
+    return this.filters;
+  }
+
   setResonance(res: number, time: number = 0) {
     // Web Audio Biquad Q isn't exactly Moog resonance, but we can approximate
     // For a 4-pole filter, Q affects the peak.
@@ -88,6 +92,10 @@ export interface SynthSettings {
   release: number;
   lfoRate: number;
   lfoDepth: number;
+  tremoloRate: number;
+  tremoloDepth: number;
+  vibratoRate: number;
+  vibratoDepth: number;
   masterVolume: number;
   // Keyboard Config
   visibleOctaves?: number;
@@ -329,6 +337,43 @@ export const useSynth = (settings: SynthSettings) => {
 
     const filter = new MoogFilter(audioCtx.current);
 
+    // LFO for Filter
+    const lfo = audioCtx.current.createOscillator();
+    const lfoGain = audioCtx.current.createGain();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(settings.lfoRate, now);
+    lfoGain.gain.setValueAtTime(settings.lfoDepth * 1000, now); // Depth affects frequency in Hz
+    lfo.connect(lfoGain);
+    // We'll connect lfoGain to filter frequency later if we can, 
+    // but MoogFilter is a custom class. 
+    // Let's modify MoogFilter to accept a modulation input or just use BiquadFilters directly if needed.
+    // Actually, MoogFilter uses BiquadFilters internally.
+    
+    // Tremolo LFO
+    const tremoloLfo = audioCtx.current.createOscillator();
+    const tremoloGain = audioCtx.current.createGain();
+    tremoloLfo.type = 'sine';
+    tremoloLfo.frequency.setValueAtTime(settings.tremoloRate, now);
+    // Tremolo affects volume, so it should oscillate around 1.0
+    // Depth 0-1. We want gain to go from (1-depth) to 1.
+    const tremoloMod = audioCtx.current.createGain();
+    tremoloMod.gain.setValueAtTime(settings.tremoloDepth, now);
+    tremoloLfo.connect(tremoloMod);
+    
+    const tremoloBase = audioCtx.current.createGain();
+    tremoloBase.gain.setValueAtTime(1.0 - settings.tremoloDepth, now);
+    // tremoloMod will add to tremoloBase
+    
+    // Vibrato LFO
+    const vibratoLfo = audioCtx.current.createOscillator();
+    const vibratoGain = audioCtx.current.createGain();
+    vibratoLfo.type = 'sine';
+    vibratoLfo.frequency.setValueAtTime(settings.vibratoRate, now);
+    vibratoGain.gain.setValueAtTime(settings.vibratoDepth * 10, now); // Depth in Hz
+    vibratoLfo.connect(vibratoGain);
+    vibratoGain.connect(osc1.frequency);
+    vibratoGain.connect(osc2.frequency);
+
     osc1.type = settings.osc1Wave;
     osc1.frequency.setValueAtTime(frequency, now);
     osc1Gain.gain.setValueAtTime(settings.osc1Enabled ? settings.osc1Gain : 0, now);
@@ -439,9 +484,30 @@ export const useSynth = (settings: SynthSettings) => {
     // Filter
     chain.connect(filter.getInput());
     
+    // Connect LFO to Filter
+    // Since MoogFilter uses 4 biquads, we connect LFO to each
+    filter.getFilters().forEach((f: BiquadFilterNode) => {
+      lfoGain.connect(f.frequency);
+    });
+
+    // Tremolo connection
+    const tremoloNode = audioCtx.current.createGain();
+    tremoloNode.gain.setValueAtTime(1.0, now);
+    // This is tricky with standard nodes. 
+    // Better way: tremoloLfo -> tremoloMod -> tremoloNode.gain
+    // And set tremoloNode.gain.value to (1.0 - depth)
+    tremoloNode.gain.setValueAtTime(1.0 - (settings.tremoloDepth / 2), now);
+    const tremoloDepthNode = audioCtx.current.createGain();
+    tremoloDepthNode.gain.setValueAtTime(settings.tremoloDepth / 2, now);
+    tremoloLfo.connect(tremoloDepthNode);
+    tremoloDepthNode.connect(tremoloNode.gain);
+
+    filter.connect(tremoloNode);
+    chain = tremoloNode;
+    
     // Reverb (Parallel)
-    filter.connect(dryGain);
-    filter.connect(reverbNode);
+    chain.connect(dryGain);
+    chain.connect(reverbNode);
     reverbNode.connect(reverbGain);
     reverbGain.connect(wetGain);
     
@@ -451,10 +517,14 @@ export const useSynth = (settings: SynthSettings) => {
     osc1.start();
     osc2.start();
     noise.start();
+    lfo.start();
+    tremoloLfo.start();
+    vibratoLfo.start();
 
     const voice = { 
       osc1, osc2, noise, 
       osc1Gain, osc2Gain, noiseGain,
+      lfo, lfoGain, tremoloLfo, tremoloDepthNode, vibratoLfo, vibratoGain,
       growlDrive, distDrive, fuzzDrive, growlNode, distNode, fuzzNode,
       reverbGain, 
       lowEq, midEq, highEq,
@@ -525,6 +595,18 @@ export const useSynth = (settings: SynthSettings) => {
       // Filter
       voice.filter.setFrequency(settings.filterCutoff, now);
       voice.filter.setResonance(settings.filterResonance, now);
+
+      // LFO Updates
+      voice.lfo.frequency.setTargetAtTime(settings.lfoRate, now, 0.01);
+      voice.lfoGain.gain.setTargetAtTime(settings.lfoDepth * 1000, now, 0.01);
+
+      // Tremolo Updates
+      voice.tremoloLfo.frequency.setTargetAtTime(settings.tremoloRate, now, 0.01);
+      voice.tremoloDepthNode.gain.setTargetAtTime(settings.tremoloDepth / 2, now, 0.01);
+
+      // Vibrato Updates
+      voice.vibratoLfo.frequency.setTargetAtTime(settings.vibratoRate, now, 0.01);
+      voice.vibratoGain.gain.setTargetAtTime(settings.vibratoDepth * 10, now, 0.01);
     });
 
     // Update master volume
@@ -554,6 +636,9 @@ export const useSynth = (settings: SynthSettings) => {
         voice.osc1.stop();
         voice.osc2.stop();
         voice.noise.stop();
+        voice.lfo.stop();
+        voice.tremoloLfo.stop();
+        voice.vibratoLfo.stop();
         voice.osc1.disconnect();
         voice.osc2.disconnect();
         voice.noise.disconnect();

@@ -25,6 +25,10 @@ export const PRESETS: Record<string, SynthSettings> = {
     release: 0.4,
     lfoRate: 2.5,
     lfoDepth: 0.1,
+    tremoloRate: 4.0,
+    tremoloDepth: 0.0,
+    vibratoRate: 5.0,
+    vibratoDepth: 0.0,
     masterVolume: 0.3
   },
   "Deep Bass": {
@@ -51,6 +55,10 @@ export const PRESETS: Record<string, SynthSettings> = {
     release: 0.2,
     lfoRate: 1.0,
     lfoDepth: 0.05,
+    tremoloRate: 3.0,
+    tremoloDepth: 0.0,
+    vibratoRate: 4.0,
+    vibratoDepth: 0.0,
     masterVolume: 0.3
   },
   "Acid Lead": {
@@ -77,6 +85,10 @@ export const PRESETS: Record<string, SynthSettings> = {
     release: 0.1,
     lfoRate: 6.0,
     lfoDepth: 0.2,
+    tremoloRate: 5.0,
+    tremoloDepth: 0.0,
+    vibratoRate: 6.0,
+    vibratoDepth: 0.1,
     masterVolume: 0.3
   },
   "Bright Pluck": {
@@ -103,6 +115,10 @@ export const PRESETS: Record<string, SynthSettings> = {
     release: 0.1,
     lfoRate: 4.0,
     lfoDepth: 0.05,
+    tremoloRate: 4.0,
+    tremoloDepth: 0.0,
+    vibratoRate: 5.0,
+    vibratoDepth: 0.0,
     masterVolume: 0.3
   },
   "Aggressive Fuzz": {
@@ -129,6 +145,10 @@ export const PRESETS: Record<string, SynthSettings> = {
     release: 0.3,
     lfoRate: 8.0,
     lfoDepth: 0.15,
+    tremoloRate: 6.0,
+    tremoloDepth: 0.1,
+    vibratoRate: 7.0,
+    vibratoDepth: 0.05,
     masterVolume: 0.3
   },
   "Sync Lead": {
@@ -155,6 +175,10 @@ export const PRESETS: Record<string, SynthSettings> = {
     release: 0.2,
     lfoRate: 5.0,
     lfoDepth: 0.2,
+    tremoloRate: 5.0,
+    tremoloDepth: 0.0,
+    vibratoRate: 6.0,
+    vibratoDepth: 0.1,
     masterVolume: 0.3
   },
   "Industrial Noise": {
@@ -181,6 +205,10 @@ export const PRESETS: Record<string, SynthSettings> = {
     release: 0.05,
     lfoRate: 15.0,
     lfoDepth: 0.8,
+    tremoloRate: 10.0,
+    tremoloDepth: 0.3,
+    vibratoRate: 12.0,
+    vibratoDepth: 0.2,
     masterVolume: 0.3
   },
   "Funky Saw": {
@@ -207,6 +235,40 @@ export const PRESETS: Record<string, SynthSettings> = {
     release: 0.1,
     lfoRate: 4.5,
     lfoDepth: 0.15,
+    tremoloRate: 5.0,
+    tremoloDepth: 0.0,
+    vibratoRate: 6.0,
+    vibratoDepth: 0.0,
+    masterVolume: 0.3
+  },
+  "Trombone": {
+    osc1Enabled: true,
+    osc1Wave: 'sawtooth',
+    osc1Gain: 0.8,
+    osc2Enabled: true,
+    osc2Wave: 'sawtooth',
+    osc2Gain: 0.4,
+    noiseLevel: 0.02,
+    growl: 0.3,
+    distortion: 0.1,
+    fuzz: 0.0,
+    reverb: 0.3,
+    eqLow: 4,
+    eqMid: 2,
+    eqHigh: -2,
+    filterCutoff: 800,
+    filterResonance: 0.4,
+    filterEnvAmount: 0.6,
+    attack: 0.1,
+    decay: 0.2,
+    sustain: 0.7,
+    release: 0.2,
+    lfoRate: 5.0,
+    lfoDepth: 0.1,
+    tremoloRate: 4.0,
+    tremoloDepth: 0.05,
+    vibratoRate: 5.5,
+    vibratoDepth: 0.15,
     masterVolume: 0.3
   }
 };

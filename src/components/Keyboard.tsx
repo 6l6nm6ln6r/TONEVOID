@@ -58,25 +58,21 @@ export const Keyboard = React.memo(({
       >
         {/* White Keys Layer */}
         <div className="flex h-full w-full px-4">
-          <AnimatePresence>
-            {whiteKeys.map((note) => (
-              <motion.button
-                key={note.midi}
-                data-midi={note.midi}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ 
-                  opacity: 1, 
-                  scale: 1,
-                  y: activeKeys.has(note.midi) ? 8 : 0
-                }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 300, 
-                  damping: 30,
-                  opacity: { duration: 0.2 },
-                  y: { duration: 0.1 }
-                }}
+          {whiteKeys.map((note) => (
+            <motion.button
+              key={note.midi}
+              data-midi={note.midi}
+              animate={{ 
+                opacity: 1, 
+                scale: 1,
+                y: activeKeys.has(note.midi) ? 8 : 0
+              }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 300, 
+                damping: 30,
+                y: { duration: 0.1 }
+              }}
                 onPointerDown={(e) => { 
                   (e.target as HTMLElement).releasePointerCapture(e.pointerId);
                   handleKeyDown(note.midi, e.pointerId); 
@@ -118,14 +114,12 @@ export const Keyboard = React.memo(({
                 )}
               </motion.button>
             ))}
-          </AnimatePresence>
         </div>
 
         {/* Black Keys Layer */}
         <div className="absolute top-0 left-0 w-full h-[60%] px-4 pointer-events-none">
           <div className="relative w-full h-full">
-            <AnimatePresence>
-              {blackKeys.map((note) => {
+            {blackKeys.map((note) => {
                 const whiteKeysPerOctave = 7;
                 
                 let positionIndex = 0;
@@ -199,9 +193,8 @@ export const Keyboard = React.memo(({
                     </motion.div>
                   )}
                 </motion.button>
-              );
-            })}
-            </AnimatePresence>
+            );
+          })}
           </div>
         </div>
       </div>
