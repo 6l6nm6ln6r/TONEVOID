@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo, ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
+  Activity,
   Waves, 
   Zap, 
   Wind, 
