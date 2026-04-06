@@ -171,6 +171,26 @@ const ControlKnob = ({ label, value, min, max, step = 1, onChange, unit = "", co
   );
 };
 
+const ToggleSwitch = ({ label, enabled, onToggle, color = "orange" }: { 
+  label: string, enabled: boolean, onToggle: () => void, color?: ColorKey
+}) => {
+  const theme = COLOR_MAPS[color];
+  return (
+    <div className={`flex flex-col items-center p-2 sm:p-3 bg-zinc-900/40 rounded-xl border border-zinc-800/40 w-full max-w-[140px] gap-2`}>
+      <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.1em] text-zinc-500 font-bold text-center">{label}</span>
+      <button 
+        onClick={onToggle}
+        className={`relative w-10 h-5 sm:w-12 sm:h-6 rounded-full transition-colors duration-200 focus:outline-none border border-zinc-700/50 ${enabled ? theme.bg : 'bg-zinc-800'}`}
+      >
+        <div className={`absolute top-0.5 left-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full transition-transform duration-200 shadow-sm ${enabled ? 'translate-x-5 sm:translate-x-6' : 'translate-x-0'}`} />
+      </button>
+      <span className={`text-[8px] sm:text-[9px] font-mono uppercase ${enabled ? theme.text : 'text-zinc-500'}`}>
+        {enabled ? 'ON' : 'OFF'}
+      </span>
+    </div>
+  );
+};
+
 const WaveSelector = ({ label, current, enabled, options, onChange, onToggle, color = "orange" }: { 
   label: string, current: string, enabled: boolean, options: OscillatorType[], onChange: (val: OscillatorType) => void, onToggle: () => void, color?: ColorKey
 }) => {
@@ -822,6 +842,12 @@ export default function App() {
                 onChange={(val) => setSettings(s => ({ ...s, reverb: val }))}
                 color="emerald"
                 type={controlType}
+              />
+              <ToggleSwitch 
+                label="Embouchure"
+                enabled={settings.embouchure}
+                onToggle={() => setSettings(s => ({ ...s, embouchure: !s.embouchure }))}
+                color="emerald"
               />
             </div>
           </CollapsiblePanel>

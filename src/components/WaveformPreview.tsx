@@ -66,11 +66,29 @@ export const WaveformPreview = ({ getAnalyser }: WaveformPreviewProps) => {
 
       const bufferLength = dataArray.length;
 
+      // Calculate movement speed (average delta)
+      let totalDelta = 0;
+      for (let i = 1; i < bufferLength; i++) {
+        totalDelta += Math.abs(dataArray[i] - dataArray[i-1]);
+      }
+      const avgDelta = totalDelta / bufferLength;
+      // Map speed to color transition (Yellow to Orange)
+      // Normal signal delta is around 2-20
+      // Decreasing divisor to 3.5 to make it transition to orange much faster
+      const speedFactor = Math.min(1, avgDelta / 3.5);
+      
+      // Yellow: #eab308 (234, 179, 8)
+      // Orange: #f97316 (249, 115, 22)
+      const r = Math.round(234 + (249 - 234) * speedFactor);
+      const g = Math.round(179 + (115 - 179) * speedFactor);
+      const b = Math.round(8 + (22 - 8) * speedFactor);
+      const dynamicColor = `rgb(${r}, ${g}, ${b})`;
+
       // Draw waveform
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#f97316'; // orange-500
+      ctx.strokeStyle = dynamicColor;
       ctx.shadowBlur = 10;
-      ctx.shadowColor = 'rgba(249, 115, 22, 0.5)';
+      ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
       ctx.beginPath();
 
       const sliceWidth = (canvas.width * 1.0) / bufferLength;
@@ -97,8 +115,8 @@ export const WaveformPreview = ({ getAnalyser }: WaveformPreviewProps) => {
       if (hasSignal) {
         ctx.stroke();
       } else {
-        // Resting state: subtle pulse on the center line
-        ctx.strokeStyle = 'rgba(249, 115, 22, 0.2)';
+        // Resting state: subtle pulse on the center line (Yellow)
+        ctx.strokeStyle = 'rgba(234, 179, 8, 0.2)';
         ctx.shadowBlur = 0;
         ctx.beginPath();
         ctx.moveTo(0, canvas.height / 2);

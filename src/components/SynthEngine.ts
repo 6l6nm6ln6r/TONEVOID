@@ -97,6 +97,7 @@ export interface SynthSettings {
   tremoloDepth: number;
   vibratoRate: number;
   vibratoDepth: number;
+  embouchure: boolean;
   masterVolume: number;
   // Keyboard Config
   visibleOctaves?: number;
@@ -118,6 +119,7 @@ export const useSynth = (settings: SynthSettings) => {
   const growlCurve = useRef<Float32Array | null>(null);
   const distortionCurve = useRef<Float32Array | null>(null);
   const fuzzCurve = useRef<Float32Array | null>(null);
+  const embouchureCurve = useRef<Float32Array | null>(null);
   const lastGrowlAmount = useRef<number>(-1);
   const lastDistortionAmount = useRef<number>(-1);
   const lastFuzzAmount = useRef<number>(-1);
@@ -190,6 +192,31 @@ export const useSynth = (settings: SynthSettings) => {
       const a = Math.abs(x);
       const bias = x > 0 ? 1.8 : 0.6;
       curve[i] = s * (1 - Math.exp(-k * a * bias));
+    }
+    return curve;
+  };
+
+  const makeEmbouchureCurve = () => {
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    for (let i = 0; i < n_samples; ++i) {
+      const x = (i * 2) / n_samples - 1;
+      // More aggressive brass-like "bite" curve
+      const absX = Math.abs(x);
+      const s = Math.sign(x);
+      
+      // Sharper non-linear response to simulate lip tension and harmonic richness
+      // Using a combination of hard-ish clipping and a "pinch" near zero
+      if (absX < 0.1) {
+        // Very sharp transition near zero to simulate the "buzz"
+        curve[i] = s * Math.pow(absX * 10, 0.5) * 0.2;
+      } else {
+        // Aggressive saturation for the rest of the range
+        curve[i] = s * (0.2 + Math.pow((absX - 0.1) / 0.9, 0.6) * 0.8);
+      }
+      
+      // Add a bit of tanh for warmth
+      curve[i] = Math.tanh(curve[i] * 2) / Math.tanh(2);
     }
     return curve;
   };
@@ -313,6 +340,7 @@ export const useSynth = (settings: SynthSettings) => {
     const growlNode = audioCtx.current.createWaveShaper();
     const distNode = audioCtx.current.createWaveShaper();
     const fuzzNode = audioCtx.current.createWaveShaper();
+    const embouchureNode = audioCtx.current.createWaveShaper();
     const reverbNode = audioCtx.current.createConvolver();
     const reverbGain = audioCtx.current.createGain();
     const dryGain = audioCtx.current.createGain();
@@ -417,6 +445,12 @@ export const useSynth = (settings: SynthSettings) => {
     }
     fuzzNode.curve = fuzzCurve.current;
     
+    // Embouchure logic
+    if (!embouchureCurve.current) {
+      embouchureCurve.current = makeEmbouchureCurve();
+    }
+    embouchureNode.curve = embouchureCurve.current;
+    
     // Reverb logic
     if (!reverbBuffer.current) {
       reverbBuffer.current = createReverbBuffer(audioCtx.current);
@@ -479,6 +513,12 @@ export const useSynth = (settings: SynthSettings) => {
     fuzzDrive.connect(fuzzNode);
     chain.connect(fuzzDrive);
     chain = fuzzNode;
+
+    // Embouchure
+    if (settings.embouchure) {
+      chain.connect(embouchureNode);
+      chain = embouchureNode;
+    }
 
     // Post-effect makeup gain
     const postEffectGain = audioCtx.current.createGain();
@@ -594,6 +634,11 @@ export const useSynth = (settings: SynthSettings) => {
       if (voice.growlNode.curve !== newGrowlCurve) voice.growlNode.curve = newGrowlCurve;
       if (voice.distNode.curve !== newDistCurve) voice.distNode.curve = newDistCurve;
       if (voice.fuzzNode.curve !== newFuzzCurve) voice.fuzzNode.curve = newFuzzCurve;
+
+      // Embouchure is a boolean toggle, we can't easily "hot swap" in the chain 
+      // without re-connecting, but we can bypass it by setting curve to null or identity.
+      // However, for simplicity and performance, we'll just let it stay if it was on.
+      // Actually, let's just handle it in the next note play for now as it's a "voice" property.
 
       // Reverb
       voice.reverbGain.gain.setTargetAtTime(reverbAmount, now, 0.01);

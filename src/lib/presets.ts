@@ -30,6 +30,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.0,
     vibratoRate: 5.0,
     vibratoDepth: 0.0,
+    embouchure: false,
     masterVolume: 0.3
   },
   "Deep Bass": {
@@ -61,6 +62,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.0,
     vibratoRate: 4.0,
     vibratoDepth: 0.0,
+    embouchure: false,
     masterVolume: 0.3
   },
   "Acid Lead": {
@@ -92,6 +94,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.0,
     vibratoRate: 6.0,
     vibratoDepth: 0.1,
+    embouchure: false,
     masterVolume: 0.3
   },
   "Bright Pluck": {
@@ -123,6 +126,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.0,
     vibratoRate: 5.0,
     vibratoDepth: 0.0,
+    embouchure: false,
     masterVolume: 0.3
   },
   "Aggressive Fuzz": {
@@ -154,6 +158,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.1,
     vibratoRate: 7.0,
     vibratoDepth: 0.05,
+    embouchure: false,
     masterVolume: 0.3
   },
   "Sync Lead": {
@@ -185,6 +190,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.0,
     vibratoRate: 6.0,
     vibratoDepth: 0.1,
+    embouchure: false,
     masterVolume: 0.3
   },
   "Industrial Noise": {
@@ -216,6 +222,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.3,
     vibratoRate: 12.0,
     vibratoDepth: 0.2,
+    embouchure: false,
     masterVolume: 0.3
   },
   "Funky Saw": {
@@ -247,6 +254,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.0,
     vibratoRate: 6.0,
     vibratoDepth: 0.0,
+    embouchure: false,
     masterVolume: 0.3
   },
   "Trombone": {
@@ -278,6 +286,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.05,
     vibratoRate: 5.5,
     vibratoDepth: 0.15,
+    embouchure: true,
     masterVolume: 0.3
   },
   "Cello": {
@@ -309,6 +318,7 @@ export const PRESETS: Record<string, SynthSettings> = {
     tremoloDepth: 0.05,
     vibratoRate: 4.5,
     vibratoDepth: 0.2,
+    embouchure: false,
     masterVolume: 0.3
   }
 };
